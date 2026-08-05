@@ -1,0 +1,46 @@
+{
+  "name": "uniapp-easycom-jumper",
+  "displayName": "UniApp Easycom Jumper",
+  "description": "支持 uni-app easycom 组件模式的点击跳转定义",
+  "version": "1.0.0",
+  "publisher": "uniapp-helper",
+  "license": "MIT",
+  "homepage": "https://github.com/your-org/uniapp-easycom-jumper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/uniapp-easycom-jumper"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/uniapp-easycom-jumper/issues"
+  },
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:vue"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "UniApp Easycom Jumper",
+      "properties": {
+        "uniappEasycom.pagesJsonPath": {
+          "type": "string",
+          "default": "src/pages.json",
+          "description": "pages.json 的相对路径"
+        },
+        "uniappEasycom.alias": {
+          "type": "object",
+          "default": {
+            "@": "src",
+            "~": "src"
+          },
+          "description": "路径别名映射"
+        }
+      }
+    }
+  }
+}
