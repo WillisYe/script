@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSON对象对比</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    .header { margin-bottom: 12px; }
+    .header h1 { font-size: 16px; color: #333; margin-bottom: 2px; }
+    .header p { font-size: 12px; color: #999; }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .input-col { flex: 1; display: flex; flex-direction: column; }
+    .input-col label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    .input-col textarea {
+      flex: 1;
+      min-height: 120px;
+      padding: 10px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      resize: vertical;
+      outline: none;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    .input-col textarea:focus { border-color: #1890ff; }
+
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      padding: 6px 20px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: #1890ff; color: #fff; }
+    .btn-primary:hover { background: #40a9ff; }
+    .btn-ghost { background: #fff; color: #666; border: 1px solid #d9d9d9; }
+    .btn-ghost:hover { border-color: #1890ff; color: #1890ff; }
+    .btn-swap { background: #fff; color: #faad14; border: 1px solid #faad14; }
+    .btn-swap:hover { background: #fffbe6; }
+
+    .error-msg {
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: #ff4d4f;
+      font-size: 13px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .error-msg.show { display: block; }
+
+    .stats {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+    .stat-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .stat-dot.added { background: #52c41a; }
+    .stat-dot.removed { background: #ff4d4f; }
+    .stat-dot.changed { background: #faad14; }
+    .stat-dot.same { background: #d9d9d9; }
+
+    .diff-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 12px;
+    }
+    .diff-table th {
+      background: #595959;
+      color: #fff;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .diff-table td {
+      padding: 8px 12px;
+      font-size: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      font-family: 'Consolas', 'Monaco', monospace;
+      vertical-align: top;
+    }
+    .diff-table tr.added td { background: #f6ffed; }
+    .diff-table tr.added td:first-child { border-left: 3px solid #52c41a; }
+    .diff-table tr.removed td { background: #fff2f0; }
+    .diff-table tr.removed td:first-child { border-left: 3px solid #ff4d4f; }
+    .diff-table tr.changed td { background: #fffbe6; }
+    .diff-table tr.changed td:first-child { border-left: 3px solid #faad14; }
+    .diff-table tr.same td { background: #fff; }
+    .diff-table tr.same td:first-child { border-left: 3px solid #d9d9d9; }
+
+    .path-col { color: #666; white-space: nowrap; width: 30%; }
+    .old-col { color: #ff4d4f; word-break: break-all; width: 35%; }
+    .new-col { color: #52c41a; word-break: break-all; width: 35%; }
+    tr.same .old-col, tr.same .new-col { color: #999; }
+
+    .tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    .tag-add { background: #f6ffed; color: #52c41a; }
+    .tag-del { background: #fff2f0; color: #ff4d4f; }
+    .tag-chg { background: #fffbe6; color: #faad14; }
+
+    .empty-hint {
+      text-align: center;
+      padding: 40px 20px;
+      color: #bbb;
+      font-size: 14px;
+    }
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      color: #666;
+    }
+    .filter-item input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: #1890ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>JSON 对象对比</h1>
+    <p>对比两个 JS 对象的差异，适用于接口重构前后传参对比</p>
+  </div>
+
+  <div class="input-row">
+    <div class="input-col">
+      <label>重构前（旧）</label>
+      <textarea id="leftInput" spellcheck="false" placeholder='粘贴旧的JSON对象，例如：&#10;{&#10;  "userId": 123,&#10;  "name": "张三"&#10;}'></textarea>
+    </div>
+    <div class="input-col">
+      <label>重构后（新）</label>
+      <textarea id="rightInput" spellcheck="false" placeholder='粘贴新的JSON对象，例如：&#10;{&#10;  "user_id": 123,&#10;  "name": "张三",&#10;  "status": 1&#10;}'></textarea>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-swap" onclick="swapInputs()">⇄ 交换</button>
+    <button class="btn btn-primary" onclick="doCompare()">对比</button>
+    <button class="btn btn-ghost" onclick="clearAll()">清空</button>
+    <button class="btn btn-ghost" onclick="loadExample()">示例</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results" id="results">
+    <div class="stats" id="stats"></div>
+    <div class="filter-bar">
+      <label class="filter-item"><input type="checkbox" data-filter="changed" checked onchange="onFilterChange()">变更</label>
+      <label class="filter-item"><input type="checkbox" data-filter="added" checked onchange="onFilterChange()">新增</label>
+      <label class="filter-item"><input type="checkbox" data-filter="removed" checked onchange="onFilterChange()">删除</label>
+      <label class="filter-item"><input type="checkbox" data-filter="same" onchange="onFilterChange()">相同</label>
+    </div>
+    <table class="diff-table">
+      <thead><tr><th>路径</th><th>旧值</th><th>新值</th></tr></thead>
+      <tbody id="diffBody"></tbody>
+    </table>
+  </div>
+
+  <div class="empty-hint" id="emptyHint">输入两个 JSON 对象后点击「对比」</div>
+
+  <script>
+    const leftInput = document.getElementById('leftInput');
+    const rightInput = document.getElementById('rightInput');
+    const errorMsg = document.getElementById('errorMsg');
+    const results = document.getElementById('results');
+    const emptyHint = document.getElementById('emptyHint');
+    const statsEl = document.getElementById('stats');
+    const diffBody = document.getElementById('diffBody');
+
+    let allDiffs = [];
+    let currentFilter = new Set(['changed', 'added', 'removed']);
+
+    function onFilterChange() {
+      currentFilter = new Set();
+      document.querySelectorAll('.filter-item input[type="checkbox"]').forEach(cb => {
+        if (cb.checked) currentFilter.add(cb.dataset.filter);
+      });
+      renderDiffs();
+    }
+
+    function parseInput(text) {
+      text = text.trim();
+      // 支持 JS 对象字面量（将 key 加引号）
+      if (!text.startsWith('{') && !text.startsWith('[')) {
+        throw new Error('输入不是有效的 JSON 对象');
+      }
+      try {
+        return JSON.parse(text);
+      } catch {
+        // 尝试修复：单引号转双引号、无引号key加引号
+        try {
+          const fixed = text
+            .replace(/'/g, '"')
+            .replace(/(\w+)\s*:/g, '"$1":')
+            .replace(/,\s*}/g, '}')
+            .replace(/,\s*]/g, ']');
+          return JSON.parse(fixed);
+        } catch (e) {
+          throw new Error('JSON 解析失败: ' + e.message);
+        }
+      }
+    }
+
+    // 深度对比
+    function deepDiff(left, right, path, diffs) {
+      const leftType = getType(left);
+      const rightType = getType(right);
+
+      if (leftType !== rightType) {
+        diffs.push({ path, old: left, new: right, type: 'changed' });
+        return;
+      }
+
+      if (leftType === 'object') {
+        const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
+        for (const key of allKeys) {
+          const newPath = path ? path + '.' + key : key;
+          if (!(key in left)) {
+            collectAll(right[key], newPath, 'added', diffs);
+          } else if (!(key in right)) {
+            collectAll(left[key], newPath, 'removed', diffs);
+          } else {
+            deepDiff(left[key], right[key], newPath, diffs);
+          }
+        }
+      } else if (leftType === 'array') {
+        const maxLen = Math.max(left.length, right.length);
+        for (let i = 0; i < maxLen; i++) {
+          const newPath = path + '[' + i + ']';
+          if (i >= left.length) {
+            collectAll(right[i], newPath, 'added', diffs);
+          } else if (i >= right.length) {
+            collectAll(left[i], newPath, 'removed', diffs);
+          } else {
+            deepDiff(left[i], right[i], newPath, diffs);
+          }
+        }
+      } else {
+        if (left !== right) {
+          diffs.push({ path, old: left, new: right, type: 'changed' });
+        } else {
+          diffs.push({ path, old: left, new: right, type: 'same' });
+        }
+      }
+    }
+
+    function collectAll(val, path, type, diffs) {
+      const t = getType(val);
+      if (t === 'object') {
+        for (const key of Object.keys(val)) {
+          collectAll(val[key], path + '.' + key, type, diffs);
+        }
+      } else if (t === 'array') {
+        for (let i = 0; i < val.length; i++) {
+          collectAll(val[i], path + '[' + i + ']', type, diffs);
+        }
+      } else {
+        diffs.push({ path, old: type === 'removed' ? val : undefined, new: type === 'added' ? val : undefined, type });
+      }
+    }
+
+    function getType(val) {
+      if (val === null || val === undefined) return 'null';
+      if (Array.isArray(val)) return 'array';
+      return typeof val;
+    }
+
+    function formatValue(val) {
+      if (val === undefined) return '<span style="color:#bbb">—</span>';
+      if (val === null) return 'null';
+      if (typeof val === 'string') return '"' + escapeHtml(val) + '"';
+      if (typeof val === 'object') return escapeHtml(JSON.stringify(val));
+      return escapeHtml(String(val));
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function doCompare() {
+      errorMsg.classList.remove('show');
+      const leftText = leftInput.value.trim();
+      const rightText = rightInput.value.trim();
+
+      if (!leftText || !rightText) {
+        showError('请在左右两侧都输入 JSON 对象');
+        return;
+      }
+
+      let leftObj, rightObj;
+      try {
+        leftObj = parseInput(leftText);
+      } catch (e) {
+        showError('左侧（旧）' + e.message);
+        return;
+      }
+      try {
+        rightObj = parseInput(rightText);
+      } catch (e) {
+        showError('右侧（新）' + e.message);
+        return;
+      }
+
+      allDiffs = [];
+      deepDiff(leftObj, rightObj, '', allDiffs);
+
+      const counts = { added: 0, removed: 0, changed: 0, same: 0 };
+      for (const d of allDiffs) counts[d.type]++;
+
+      statsEl.innerHTML = `
+        <div class="stat-item"><span class="stat-dot added"></span>新增 ${counts.added}</div>
+        <div class="stat-item"><span class="stat-dot removed"></span>删除 ${counts.removed}</div>
+        <div class="stat-item"><span class="stat-dot changed"></span>变更 ${counts.changed}</div>
+        <div class="stat-item"><span class="stat-dot same"></span>相同 ${counts.same}</div>
+      `;
+
+      renderDiffs();
+      emptyHint.style.display = 'none';
+      results.classList.add('visible');
+    }
+
+    function renderDiffs() {
+      const filtered = allDiffs.filter(d => currentFilter.has(d.type));
+      if (filtered.length === 0) {
+        diffBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#999;padding:20px;">无匹配项</td></tr>';
+        return;
+      }
+      const tagMap = { added: '<span class="tag tag-add">新增</span>', removed: '<span class="tag tag-del">删除</span>', changed: '<span class="tag tag-chg">变更</span>', same: '' };
+      diffBody.innerHTML = filtered.map(d => `
+        <tr class="${d.type}">
+          <td class="path-col">${escapeHtml(d.path)}${tagMap[d.type]}</td>
+          <td class="old-col">${d.type === 'added' ? '<span style="color:#bbb">—</span>' : formatValue(d.old)}</td>
+          <td class="new-col">${d.type === 'removed' ? '<span style="color:#bbb">—</span>' : formatValue(d.new)}</td>
+        </tr>
+      `).join('');
+    }
+
+
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('show');
+      results.classList.remove('visible');
+    }
+
+    function swapInputs() {
+      const tmp = leftInput.value;
+      leftInput.value = rightInput.value;
+      rightInput.value = tmp;
+    }
+
+    function clearAll() {
+      leftInput.value = '';
+      rightInput.value = '';
+      errorMsg.classList.remove('show');
+      results.classList.remove('visible');
+      emptyHint.style.display = '';
+      allDiffs = [];
+    }
+
+    function loadExample() {
+      leftInput.value = JSON.stringify({
+        userId: 123,
+        name: "张三",
+        address: { city: "上海", zip: "200000" },
+        tags: ["admin", "user"],
+        oldField: true
+      }, null, 2);
+      rightInput.value = JSON.stringify({
+        user_id: 123,
+        name: "张三丰",
+        address: { city: "上海", zip: "200001", district: "浦东" },
+        tags: ["admin", "user", "vip"],
+        status: 1
+      }, null, 2);
+      doCompare();
+    }
+
+    // Ctrl+Enter 触发对比
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        doCompare();
+      }
+    });
+
+    // 插件入口
+    window.ztools.onPluginEnter(({ payload }) => {
+      leftInput.focus();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>屏幕内容还原</title>
+    <style>
+        body {
+            font-family: "Microsoft YaHei", "SimHei", sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* 模拟手机屏幕容器 */
+        .phone-screen {
+            width: 375px;
+            height: 750px; /* 模拟长屏幕比例 */
+            background-color: #e8f5e9; /* 浅绿色背景 */
+            border: 12px solid #333;
+            border-radius: 30px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部区域 */
+        .top-section {
+            height: 15%;
+            background-color: #dcedc8;
+            border-bottom: 2px solid #333;
+            position: relative;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-start;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .percent-sign {
+            font-size: 24px;
+            color: #555;
+            font-weight: bold;
+        }
+
+        /* 中间核心图表区域 */
+        .middle-section {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        .text-green {
+            color: #2e7d32;
+            font-size: 14px;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+
+        .text-red-top {
+            color: #c62828;
+            font-size: 16px;
+            margin-bottom: 5px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* 黄色大方框 */
+        .main-yellow-box {
+            background-color: #fdd835;
+            width: 90%;
+            height: 180px;
+            border: 1px solid #fbc02d;
+            display: flex;
+            justify-content: space-between;
+            position: relative;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+
+        /* 左侧竖排文字 */
+        .side-text-left {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            color: #d32f2f;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-right: 5px;
+        }
+        
+        .side-text-left span {
+            margin: 5px 0;
+        }
+
+        /* 中间表格内容 */
+        .center-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1px;
+            background-color: #fbc02d; /* 网格线颜色 */
+            border: 1px solid #fbc02d;
+        }
+
+        .grid-item {
+            background-color: #fdd835;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            color: #333;
+            text-align: center;
+        }
+
+        /* 右侧竖排文字 */
+        .side-text-right {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            color: #d32f2f;
+            font-size: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-left: 5px;
+        }
+
+        .side-text-right span {
+            margin: 5px 0;
+        }
+
+        /* 下方文字 */
+        .text-red-bottom {
+            color: #c62828;
+            font-size: 16px;
+            margin-top: 5px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .text-black-bottom {
+            color: #333;
+            font-size: 14px;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        /* 底部卡牌区域 */
+        .bottom-section {
+            height: 35%;
+            background-color: #c8e6c9;
+            border-top: 2px solid #333;
+            position: relative;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card-row-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+
+        .top-label {
+            color: #d32f2f;
+            font-size: 14px;
+            margin-bottom: 5px;
+            align-self: flex-start;
+            margin-left: 20px;
+        }
+
+        .cards-row {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            width: 100%;
+            background-color: #fdd835;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #fbc02d;
+        }
+
+        .card-slot {
+            width: 40px;
+            height: 50px;
+            background-color: #555; /* 模拟卡牌背面或暗色 */
+            border: 1px solid #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 10px;
+        }
+        
+        /* 模拟卡牌里的图片 */
+        .card-img-placeholder {
+            width: 100%;
+            height: 100%;
+            background-color: #777;
+            opacity: 0.8;
+        }
+
+        .side-labels {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #d32f2f;
+            font-size: 14px;
+            writing-mode: vertical-rl;
+        }
+        
+        .side-labels-right {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #d32f2f;
+            font-size: 14px;
+            writing-mode: vertical-rl;
+        }
+
+        .bottom-label {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #d32f2f;
+            font-size: 14px;
+        }
+
+        /* 手机底部水印模拟 */
+        .phone-watermark {
+            position: absolute;
+            bottom: 5px;
+            left: 10px;
+            color: #aaa;
+            font-size: 12px;
+            font-family: sans-serif;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="phone-screen">
+        <!-- 顶部区域 -->
+        <div class="top-section">
+            <div class="percent-sign">%</div>
+        </div>
+
+        <!-- 中间核心区域 -->
+        <div class="middle-section">
+            <div class="text-green">绿马（疾病、死亡）</div>
+            <div class="text-red-top">
+                鹰<br>擘饼
+            </div>
+
+            <div class="main-yellow-box">
+                <!-- 左侧文字 -->
+                <div class="side-text-left">
+                    <span>祈祷</span>
+                    <span style="margin-left: 10px; color: #333;">牛</span>
+                </div>
+
+                <!-- 中间网格 -->
+                <div class="center-grid">
+                    <div class="grid-item">约柜</div>
+                    <div class="grid-item">金香坛</div>
+                    <div class="grid-item">陈设饼</div>
+                    <div class="grid-item">金灯台</div>
+                    <div class="grid-item">洗濯盆</div>
+                    <div class="grid-item">铜祭坛</div>
+                </div>
+
+                <!-- 右侧文字 -->
+                <div class="side-text-right">
+                    <span>使徒的教训</span>
+                    <span style="margin-left: 10px; color: #333;">狮子</span>
+                </div>
+            </div>
+
+            <div class="text-red-bottom">
+                团契<br>人子
+            </div>
+            <div class="text-black-bottom">
+                黑马（饥荒、缺乏）
+            </div>
+        </div>
+
+        <!-- 底部区域 -->
+        <div class="bottom-section">
+            <div class="side-labels">祈祷</div>
+            <div class="side-labels-right">使徒的教训</div>
+            
+            <div class="card-row-container">
+                <div class="top-label">擘饼</div>
+                <div class="cards-row">
+                    <!-- 模拟5个卡槽 -->
+                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
+                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
+                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
+                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
+                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
+                </div>
+            </div>
+
+            <div class="bottom-label">团契</div>
+        </div>
+
+        <div class="phone-watermark">HONOR 20i</div>
+    </div>
+
+</body>
+</html>

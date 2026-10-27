@@ -1,0 +1,33 @@
+{
+  "name": "app-launcher",
+  "version": "1.0.0",
+  "description": "搜索并启动本地应用程序",
+  "main": "index.html",
+  "preload": "preload/preload.js",
+  "logo": "logo.png",
+  "platform": [
+    "win32"
+  ],
+  "features": [
+    {
+      "code": "search",
+      "explain": "搜索并启动本地应用",
+      "cmds": [
+        "exe",
+        "app",
+        "启动",
+        {
+          "type": "regex",
+          "match": "/^exe\\s+.+$/i",
+          "label": "搜索应用"
+        },
+        {
+          "type": "regex",
+          "match": "/^app\\s+.+$/i",
+          "label": "搜索应用"
+        }
+      ]
+    }
+  ],
+  "title": "应用启动器"
+}

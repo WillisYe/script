@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pretext 功能演示 - 纯浏览器运行</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      padding: 30px 20px;
+      color: white;
+    }
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    .demo-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    }
+    .demo-card h2 {
+      color: #667eea;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+      font-size: 1.4rem;
+    }
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+      padding: 16px;
+      background: #f8f9fa;
+      border-radius: 12px;
+    }
+    .control-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    .control-group input, .control-group select, .control-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+    .control-group input:focus, .control-group select:focus, .control-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    .btn:active { transform: translateY(0); }
+    .btn-secondary {
+      background: #6c757d;
+    }
+    .results {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .result-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed #ddd;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-label { font-weight: 600; color: #555; }
+    .result-value {
+      font-family: "Monaco", "Menlo", monospace;
+      color: #667eea;
+      font-weight: 600;
+    }
+    .preview-box {
+      border: 2px dashed #ccc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+      background: white;
+      min-height: 100px;
+    }
+    .preview-text {
+      font-size: 1rem;
+      line-height: 1.6;
+      word-wrap: break-word;
+    }
+    canvas {
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      background: #fafafa;
+      display: block;
+      margin: 16px 0;
+      max-width: 100%;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      border: 2px solid #667eea;
+      background: white;
+      color: #667eea;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab-btn.active, .tab-btn:hover {
+      background: #667eea;
+      color: white;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .code-block {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 16px;
+      border-radius: 10px;
+      font-family: "Monaco", "Menlo", monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin: 16px 0;
+      white-space: pre-wrap;
+    }
+    .perf-bar {
+      height: 8px;
+      background: #e0e0e0;
+      border-radius: 4px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    .perf-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #667eea;
+      color: white;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin: 4px 4px 4px 0;
+    }
+    .badge.green { background: #28a745; }
+    .badge.orange { background: #fd7e14; }
+    footer {
+      text-align: center;
+      padding: 30px;
+      color: white;
+      opacity: 0.9;
+    }
+    footer a {
+      color: white;
+      text-decoration: none;
+      border-bottom: 1px dashed;
+    }
+    footer a:hover { border-bottom-style: solid; }
+    @media (max-width: 768px) {
+      header h1 { font-size: 2rem; }
+      .controls { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚀 Pretext 功能演示</h1>
+      <p>纯浏览器运行 · 无需构建 · 实时文本排版计算</p>
+      <div style="margin-top: 12px;">
+        <span class="badge">✅ 绕过 DOM 测量</span>
+        <span class="badge green">⚡ 纯算术运算</span>
+        <span class="badge orange">🌍 多语言支持</span>
+      </div>
+    </header>
+
+    <!-- 功能选项卡 -->
+    <div class="demo-card">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="basic">📏 基础测量</button>
+        <button class="tab-btn" data-tab="canvas">🎨 Canvas 渲染</button>
+        <button class="tab-btn" data-tab="shrinkwrap">📦 收缩包裹</button>
+        <button class="tab-btn" data-tab="perf">⚡ 性能对比</button>
+      </div>
+
+      <!-- Tab 1: 基础测量 -->
+      <div id="basic" class="tab-content active">
+        <h2>📏 快速测量段落高度</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label>文本内容</label>
+            <textarea id="basic-text" rows="4">Pretext 是一个纯 JavaScript/TypeScript 编写的多行文本测量与排版库。
+它的核心理念是：完全绕过 DOM，用纯算术运算完成文本高度计算与行排版。
+支持几乎所有语言和文字系统，包括 emoji 🎉 和混合双向文本（Bidi）！</textarea>
+          </div>
+          <div class="control-group">
+            <label>字体样式</label>
+            <input id="basic-font" value='16px "Inter", system-ui, sans-serif'/>
+          </div>
+          <div class="control-group">
+            <label>容器宽度 (px)</label>
+            <input id="basic-width" type="number" value="320" min="100" max="800"/>
+          </div>
+          <div class="control-group">
+            <label>行高 (px)</label>
+            <input id="basic-lineheight" type="number" value="24" min="16" max="48"/>
+          </div>
+        </div>
+        <button class="btn" onclick="runBasicDemo()">🔄 重新计算</button>
+
+        <div class="results">
+          <div class="result-item">
+            <span class="result-label">📐 文本总高度</span>
+            <span class="result-value" id="basic-height">-</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">📝 总行数</span>
+            <span class="result-value" id="basic-lines">-</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">🎯 平均每行高度</span>
+            <span class="result-value" id="basic-avg">-</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">⏱️ 计算耗时</span>
+            <span class="result-value" id="basic-time">-</span>
+          </div>
+        </div>
+
+        <div class="preview-box">
+          <div class="preview-text" id="basic-preview"></div>
+        </div>
+      </div>
+
+      <!-- Tab 2: Canvas 渲染 -->
+      <div id="canvas" class="tab-content">
+        <h2>🎨 Canvas 手动逐行渲染</h2>
+        <div class="controls">
+          <div class="control-group">
+            <label>Canvas 文本</label>
+            <textarea id="canvas-text" rows="3">Pretext 支持 Canvas/SVG/WebGL 等非 DOM 渲染目标 🎨
+可以自由控制每一行的样式和位置！
+试试调整参数看看效果变化 ✨</textarea>
+          </div>
+          <div class="control-group">
+            <label>字体</label>
+            <input id="canvas-font" value='16px "Helvetica Neue", sans-serif'/>
+          </div>
+          <div class="control-group">
+            <label>Canvas 宽度</label>
+            <input id="canvas-width" type="number" value="400" min="200" max="800"/>
+          </div>
+          <div class="control-group">
+            <label>行高</label>
+            <input id="canvas-lineheight" type="number" value="26" min="20" max="40"/>
+          </div>
+        </div>
+        <button class="btn" onclick="runCanvasDemo()">🎨 渲染到 Canvas</button>
+        <canvas id="canvas-output" width="400"></canvas>
+        <div class="results">
+          <div class="result-item">
+            <span class="result-label">📊 渲染行数</span>
+            <span class="result-value" id="canvas-lines">-</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">📐 Canvas 高度</span>
+            <span class="result-value" id="canvas-height">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab 3: 收缩包裹 -->
+      <div id="shrinkwrap" class="tab-content">
+        <h2>📦 计算最小容器宽度 (Shrink-wrap)</h2>
+        <p style="margin-bottom: 16px; color: #666;">
+          CSS 原生难以实现的多行文本"收缩包裹"效果，Pretext 可以轻松计算！
+        </p>
+        <div class="controls">
+          <div class="control-group">
+            <label>文本内容</label>
+            <textarea id="shrink-text" rows="3">这是一个需要计算最小宽度的文本示例 🚀
+包含中文、英文和 emoji 的混合内容
+看看能收缩到多窄！✨</textarea>
+          </div>
+          <div class="control-group">
+            <label>字体</label>
+            <input id="shrink-font" value='16px "Inter", sans-serif'/>
+          </div>
+          <div class="control-group">
+            <label>最大行高</label>
+            <input id="shrink-lineheight" type="number" value="24" min="16" max="40"/>
+          </div>
+        </div>
+        <button class="btn" onclick="runShrinkDemo()">🔍 计算最小宽度</button>
+
+        <div class="results">
+          <div class="result-item">
+            <span class="result-label">📏 最小容器宽度</span>
+            <span class="result-value" id="shrink-width">-</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">📐 对应高度</span>
+            <span class="result-value" id="shrink-height">-</span>
+          </div>
+        </div>
+
+        <div class="preview-box" id="shrink-preview" style="display: inline-block; border-width: 3px;"></div>
+      </div>
+
+      <!-- Tab 4: 性能对比 -->
+      <div id="perf" class="tab-content">
+        <h2>⚡ Pretext vs 传统 DOM 测量</h2>
+        <p style="margin-bottom: 16px; color: #666;">
+          批量处理 100 条文本，对比性能表现（单位：毫秒）
+        </p>
+
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>🚀 Pretext prepare (预处理)</span>
+            <span class="result-value" id="perf-prep-time">-</span>
+          </div>
+          <div class="perf-bar"><div class="perf-fill" id="perf-prep-bar" style="width: 0%"></div></div>
+
+          <div style="display: flex; justify-content: space-between; margin: 12px 0 4px;">
+            <span>⚡ Pretext layout (纯计算)</span>
+            <span class="result-value" id="perf-layout-time">-</span>
+          </div>
+          <div class="perf-bar"><div class="perf-fill" id="perf-layout-bar" style="width: 0%"></div></div>
+
+          <div style="display: flex; justify-content: space-between; margin: 12px 0 4px; opacity: 0.6;">
+            <span>🐌 DOM 测量 (示意)</span>
+            <span class="result-value">~50-200ms*</span>
+          </div>
+          <div class="perf-bar"><div class="perf-fill" style="width: 80%; background: #dc3545;"></div></div>
+          <small style="color: #999; display: block; margin-top: 4px;">*DOM 测量涉及重排重绘，实际耗时取决于内容复杂度</small>
+        </div>
+
+        <button class="btn" onclick="runPerfDemo()">🔄 运行基准测试</button>
+
+        <div class="results">
+          <div class="result-item">
+            <span class="result-label">📊 处理文本数</span>
+            <span class="result-value">100</span>
+          </div>
+          <div class="result-item">
+            <span class="result-label">🎯 加速比 (vs DOM)</span>
+            <span class="result-value" id="perf-ratio">-</span>
+          </div>
+        </div>
+
+        <div class="code-block">
+// Pretext 性能优势：一次预处理 + 纯数学计算
+const prepared = prepare(text, font);  // ~19ms (500条批量)
+const { height } = layout(prepared, width, lineHeight);  // ~0.09ms!
+
+// 传统 DOM 方式（每次都要重排）：
+const el = document.createElement('div');
+el.style.font = font;
+el.style.width = width + 'px';
+el.textContent = text;
+document.body.appendChild(el);  // ⚠️ 触发重排
+const height = el.offsetHeight;  // ⚠️ 再次重排
+document.body.removeChild(el);
+        </div>
+      </div>
+    </div>
+
+    <!-- 代码示例 -->
+    <div class="demo-card">
+      <h2>💻 核心代码示例</h2>
+      <div class="code-block">
+// 1️⃣ 导入 Pretext (通过 esm.sh CDN)
+import { prepare, layout, prepareWithSegments, layoutWithLines }
+  from 'https://esm.sh/@chenglou/pretext@0.0.3';
+
+// 2️⃣ 基础用法：测量高度
+const text = '你的文本内容...';
+const font = '16px sans-serif';
+const prepared = prepare(text, font);  // 预处理（只做一次）
+const { height, lineCount } = layout(prepared, 320, 24);  // 纯计算！
+
+// 3️⃣ Canvas 渲染：获取每行信息
+const preparedSeg = prepareWithSegments(text, font);
+const { lines } = layoutWithLines(preparedSeg, 320, 24);
+lines.forEach((line, i) => {
+  ctx.fillText(line.text, 0, i * 24);  // 手动渲染每一行
+});
+
+// 4️⃣ 收缩包裹：计算最小宽度
+let maxWidth = 0;
+walkLineRanges(preparedSeg, 9999, line => {
+  if (line.width > maxWidth) maxWidth = line.width;
+});
+console.log('最小宽度:', Math.ceil(maxWidth));  // 🎯 完美收缩！
+      </div>
+    </div>
+
+    <footer>
+      <p>
+        🔗 相关链接：
+        <a href="https://juejin.cn/post/7621948978658738210" target="_blank">掘金原文</a> |
+        <a href="https://github.com/chenglou/pretext" target="_blank">GitHub</a> |
+        <a href="https://www.npmjs.com/package/@chenglou/pretext" target="_blank">NPM</a>
+      </p>
+      <p style="margin-top: 8px; font-size: 0.9rem;">
+        ⚠️ 注意：Pretext 依赖 Canvas measureText API，需在现代浏览器中运行
+      </p>
+    </footer>
+  </div>
+
+  <script type="module">
+    // 🚀 通过 esm.sh CDN 导入 Pretext [[1]]
+    import {
+      prepare,
+      layout,
+      prepareWithSegments,
+      layoutWithLines,
+      walkLineRanges
+    } from 'https://esm.sh/@chenglou/pretext@0.0.3';
+
+    // 暴露到全局供 onclick 调用
+    window.runBasicDemo = runBasicDemo;
+    window.runCanvasDemo = runCanvasDemo;
+    window.runShrinkDemo = runShrinkDemo;
+    window.runPerfDemo = runPerfDemo;
+
+    // Tab 切换逻辑
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+
+    // 📏 基础测量 Demo
+    async function runBasicDemo() {
+      const text = document.getElementById('basic-text').value;
+      const font = document.getElementById('basic-font').value;
+      const width = parseInt(document.getElementById('basic-width').value);
+      const lineHeight = parseInt(document.getElementById('basic-lineheight').value);
+
+      const start = performance.now();
+      const prepared = prepare(text, font);
+      const { height, lineCount } = layout(prepared, width, lineHeight);
+      const elapsed = (performance.now() - start).toFixed(2);
+
+      document.getElementById('basic-height').textContent = `${height.toFixed(1)}px`;
+      document.getElementById('basic-lines').textContent = lineCount;
+      document.getElementById('basic-avg').textContent = `${(height / lineCount).toFixed(2)}px`;
+      document.getElementById('basic-time').textContent = `${elapsed}ms`;
+
+      // 预览区域
+      const preview = document.getElementById('basic-preview');
+      preview.innerHTML = text.replace(/\n/g, '<br/>');
+      preview.style.width = `${width}px`;
+      preview.style.font = font;
+      preview.style.lineHeight = `${lineHeight}px`;
+    }
+
+    // 🎨 Canvas 渲染 Demo
+    async function runCanvasDemo() {
+      const text = document.getElementById('canvas-text').value;
+      const font = document.getElementById('canvas-font').value;
+      const width = parseInt(document.getElementById('canvas-width').value);
+      const lineHeight = parseInt(document.getElementById('canvas-lineheight').value);
+
+      const canvas = document.getElementById('canvas-output');
+      const ctx = canvas.getContext('2d');
+      canvas.width = width;
+
+      ctx.font = font;
+      ctx.fillStyle = '#333';
+      ctx.textBaseline = 'top';
+
+      const prepared = prepareWithSegments(text, font);
+      const { lines } = layoutWithLines(prepared, width, lineHeight);
+
+      // 清空并逐行渲染
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      lines.forEach((line, i) => {
+        ctx.fillText(line.text, 0, i * lineHeight + 8);
+      });
+
+      // 更新结果
+      document.getElementById('canvas-lines').textContent = lines.length;
+      document.getElementById('canvas-height').textContent = `${canvas.height = lines.length * lineHeight + 16}px`;
+    }
+
+    // 📦 收缩包裹 Demo
+    async function runShrinkDemo() {
+      const text = document.getElementById('shrink-text').value;
+      const font = document.getElementById('shrink-font').value;
+      const lineHeight = parseInt(document.getElementById('shrink-lineheight').value);
+
+      const prepared = prepareWithSegments(text, font);
+      let maxWidth = 0;
+      let lineCount = 0;
+
+      // 遍历所有行找最大宽度
+      walkLineRanges(prepared, 9999, (line) => {
+        if (line.width > maxWidth) maxWidth = line.width;
+        lineCount++;
+      }, lineHeight);
+
+      const minWidth = Math.ceil(maxWidth);
+      const totalHeight = lineCount * lineHeight;
+
+      document.getElementById('shrink-width').textContent = `${minWidth}px`;
+      document.getElementById('shrink-height').textContent = `${totalHeight}px`;
+
+      // 预览：动态调整宽度
+      const preview = document.getElementById('shrink-preview');
+      preview.innerHTML = text.replace(/\n/g, '<br/>');
+      preview.style.width = `${minWidth}px`;
+      preview.style.font = font;
+      preview.style.lineHeight = `${lineHeight}px`;
+      preview.style.padding = '12px';
+    }
+
+    // ⚡ 性能对比 Demo
+    async function runPerfDemo() {
+      const texts = Array.from({ length: 100 }, (_, i) =>
+        `第 ${i + 1} 条测试文本，包含中文、英文和 emoji 🎉 用于性能基准测试`
+      );
+      const font = '16px sans-serif';
+      const width = 300;
+      const lineHeight = 24;
+
+      // Pretext prepare
+      const prepStart = performance.now();
+      const preparedList = texts.map(t => prepare(t, font));
+      const prepTime = performance.now() - prepStart;
+
+      // Pretext layout
+      const layoutStart = performance.now();
+      const heights = preparedList.map(p => layout(p, width, lineHeight).height);
+      const layoutTime = performance.now() - layoutStart;
+
+      // 更新 UI
+      document.getElementById('perf-prep-time').textContent = `${prepTime.toFixed(2)}ms`;
+      document.getElementById('perf-layout-time').textContent = `${layoutTime.toFixed(2)}ms`;
+
+      // 进度条可视化（相对比例）
+      const maxTime = Math.max(prepTime, layoutTime, 1);
+      document.getElementById('perf-prep-bar').style.width = `${Math.min(100, prepTime / maxTime * 100)}%`;
+      document.getElementById('perf-layout-bar').style.width = `${Math.min(100, layoutTime / maxTime * 100)}%`;
+
+      // 计算加速比（假设 DOM 方式 ~100ms）
+      const domTime = 100; // 示意值
+      const pretextTotal = prepTime + layoutTime;
+      const ratio = (domTime / pretextTotal).toFixed(1);
+      document.getElementById('perf-ratio').textContent = `~${ratio}x 更快`;
+    }
+
+    // 页面加载后自动运行基础演示
+    window.addEventListener('load', () => {
+      setTimeout(runBasicDemo, 500); // 稍等确保模块加载完成
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>接口文档猜测</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    .url-bar {
+      background: #fff;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      word-break: break-all;
+      font-size: 13px;
+      color: #666;
+    }
+    .url-bar .label { color: #999; font-size: 12px; margin-bottom: 4px; }
+    .url-bar .value { color: #1890ff; font-weight: 500; }
+    .status-bar {
+      text-align: center;
+      padding: 24px;
+      color: #999;
+      font-size: 14px;
+    }
+    .status-bar .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid #ddd;
+      border-top-color: #1890ff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result-section { margin-bottom: 16px; }
+    .result-section .section-title {
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+    .candidate-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+      background: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .candidate-item:hover { background: #e8f4ff; transform: translateX(2px); }
+    .candidate-item.success { border-left: 3px solid #52c41a; }
+    .candidate-item.fail { border-left: 3px solid #d9d9d9; opacity: 0.6; }
+    .candidate-item.checking { border-left: 3px solid #faad14; }
+    .status-icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    .status-icon.ok { background: #f6ffed; color: #52c41a; }
+    .status-icon.no { background: #f5f5f5; color: #bbb; }
+    .status-icon.wait { background: #fffbe6; color: #faad14; }
+    .candidate-url {
+      flex: 1;
+      font-size: 13px;
+      color: #333;
+      word-break: break-all;
+      line-height: 1.4;
+    }
+    .candidate-item.fail .candidate-url { color: #999; }
+    .action-btns { display: flex; gap: 6px; margin-left: 8px; flex-shrink: 0; }
+    .btn {
+      padding: 4px 10px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      background: #fff;
+      font-size: 12px;
+      cursor: pointer;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .btn:hover { border-color: #1890ff; color: #1890ff; }
+    .btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
+    .btn-primary:hover { background: #40a9ff; }
+    .summary {
+      padding: 14px 16px;
+      font-size: 14px;
+      color: #666;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+    .summary .found { color: #52c41a; font-weight: 600; }
+    .summary .not-found { color: #ff4d4f; font-weight: 600; }
+    .found-card {
+      display: flex;
+      align-items: center;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      background: #f6ffed;
+      border: 1px solid #b7eb8f;
+      border-radius: 8px;
+    }
+    .found-card .candidate-url { flex: 1; font-size: 13px; color: #333; word-break: break-all; }
+    .collapse-header {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+    .collapse-header .arrow {
+      display: inline-block;
+      transition: transform 0.2s;
+      margin-right: 6px;
+      font-size: 10px;
+    }
+    .collapse-header .arrow.open { transform: rotate(90deg); }
+    .collapse-body { display: none; }
+    .collapse-body.open { display: block; }
+    .empty-hint {
+      text-align: center;
+      padding: 60px 20px;
+      color: #bbb;
+    }
+    .empty-hint .icon { font-size: 48px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="empty-hint">
+      <div class="icon">🔗</div>
+      <div>粘贴接口URL开始猜测文档地址</div>
+    </div>
+  </div>
+
+  <script>
+    const app = document.getElementById('app');
+
+    // Swagger 文档路径模板
+    const TEMPLATES = [
+      "/swagger/index.html",
+      "/swagger/ui/index",
+      "/swagger-ui/index.html",
+      "/swagger-ui.html",
+    ];
+
+    // 根据URL生成候选文档链接
+    function generateCandidates(apiUrl) {
+      const url = new URL(apiUrl);
+      const segments = url.pathname.split("/").filter(Boolean);
+      const candidates = [];
+      for (let i = 0; i <= segments.length; i++) {
+        const basePath = segments.slice(0, i).join("/");
+        const base = `${url.protocol}//${url.host}${basePath ? "/" + basePath : ""}`;
+        for (const tpl of TEMPLATES) {
+          candidates.push(base + tpl);
+        }
+      }
+      return [...new Set(candidates)];
+    }
+
+    // 验证URL是否可访问
+    async function verifyUrl(url) {
+      try {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(url, { method: "HEAD", signal: controller.signal, redirect: "follow" });
+        clearTimeout(tid);
+        if (res.status < 400) return true;
+      } catch {}
+      try {
+        const controller = new AbortController();
+        const tid = setTimeout(() => controller.abort(), 5000);
+        const res = await fetch(url, { method: "GET", signal: controller.signal, redirect: "follow" });
+        clearTimeout(tid);
+        return res.status < 400;
+      } catch {
+        return false;
+      }
+    }
+
+    // 渲染候选列表
+    function renderResults(apiUrl, candidates, results) {
+      const found = results.filter(r => r && r.ok);
+      const allDone = results.length === candidates.length;
+      const checking = results.filter(r => r === undefined).length;
+      // 排序：可访问 > 未验证 > 不可访问
+      const sorted = candidates.map((c, i) => ({ url: c, result: results[i] }));
+      sorted.sort((a, b) => {
+        const sa = a.result === undefined ? 1 : (a.result.ok ? 0 : 2);
+        const sb = b.result === undefined ? 1 : (b.result.ok ? 0 : 2);
+        return sa - sb;
+      });
+
+      // 汇总状态
+      let summaryHtml;
+      if (!allDone) {
+        summaryHtml = `<div class="summary">验证中... 已检查 ${results.length - checking}/${candidates.length}</div>`;
+      } else if (found.length > 0) {
+        summaryHtml = `<div class="summary">找到 <span class="found">${found.length}</span> 个可用文档地址</div>`;
+      } else {
+        summaryHtml = `<div class="summary"><span class="not-found">未找到</span>可用的文档地址</div>`;
+      }
+
+      // 可用地址卡片
+      const foundHtml = found.map(r => {
+        const c = candidates[results.indexOf(r)];
+        return `
+          <div class="found-card">
+            <div class="status-icon ok">✓</div>
+            <div class="candidate-url">${escapeHtml(c)}</div>
+            <div class="action-btns">
+              <button class="btn btn-primary" onclick="openUrl('${escapeHtml(c)}')">打开</button>
+              <button class="btn" onclick="copyUrl('${escapeHtml(c)}')">复制</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      let html = `
+        <div class="url-bar">
+          <div class="label">接口地址</div>
+          <div class="value">${escapeHtml(apiUrl)}</div>
+        </div>
+        ${summaryHtml}
+        ${foundHtml}
+        <div class="result-section">
+          <div class="collapse-header" onclick="toggleCollapse()">
+            <span class="arrow" id="collapseArrow">&#9654;</span>
+            候选文档地址 (${candidates.length})
+          </div>
+          <div class="collapse-body" id="collapseBody">
+            ${sorted.map(({ url: c, result: r }) => {
+              const cls = r === undefined ? '' : (r.ok ? 'success' : 'fail');
+              const iconCls = r === undefined ? 'wait' : (r.ok ? 'ok' : 'no');
+              const icon = r === undefined ? '⏳' : (r.ok ? '✓' : '✗');
+              return `
+                <div class="candidate-item ${cls}" data-url="${escapeHtml(c)}">
+                  <div class="status-icon ${iconCls}">${icon}</div>
+                  <div class="candidate-url">${escapeHtml(c)}</div>
+                  <div class="action-btns">
+                    <button class="btn" onclick="copyUrl('${escapeHtml(c)}')">复制</button>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      app.innerHTML = html;
+    }
+
+    window.toggleCollapse = function() {
+      const body = document.getElementById('collapseBody');
+      const arrow = document.getElementById('collapseArrow');
+      body.classList.toggle('open');
+      arrow.classList.toggle('open');
+    };
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    window.openUrl = function(url) {
+      window.ztools.shellOpenExternal(url);
+    };
+
+    window.copyUrl = function(url) {
+      navigator.clipboard.writeText(url);
+    };
+
+    // 主流程
+    async function startGuess(apiUrl) {
+      const candidates = generateCandidates(apiUrl);
+      const results = new Array(candidates.length);
+
+      // 先渲染初始状态
+      renderResults(apiUrl, candidates, results);
+
+      // 逐个验证
+      for (let i = 0; i < candidates.length; i++) {
+        const ok = await verifyUrl(candidates[i]);
+        results[i] = { ok };
+        renderResults(apiUrl, candidates, results);
+      }
+    }
+
+    // 插件入口
+    window.ztools.onPluginEnter(({ payload }) => {
+      const url = (payload || '').trim();
+      if (!url) return;
+      try {
+        new URL(url);
+        startGuess(url);
+      } catch {
+        app.innerHTML = `<div class="empty-hint"><div class="icon">⚠️</div><div>无效的URL: ${escapeHtml(url)}</div></div>`;
+      }
+    });
+  </script>
+</body>
+</html>

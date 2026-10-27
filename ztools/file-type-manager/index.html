@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>文件类型管理器</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div x-data="fileTypeManager()" x-init="init()" x-cloak>
+    <div class="main-container">
+      <!-- 顶部导航栏 -->
+      <div class="nav-bar">
+        <div class="nav-items">
+          <template x-for="(type, index) in fileTypes" :key="type.id">
+            <div
+              class="nav-item"
+              :class="{ 'active': selectedTypeIndex === index }"
+              :style="selectedTypeIndex === index ? { borderBottomColor: type.color, color: type.color } : {}"
+              draggable="true"
+              @dragstart="dragStart($event, index)"
+              @dragover.prevent="dragOver($event, index)"
+              @drop="drop($event, index)"
+              @dragend="dragEnd($event)"
+              @click="selectType(index)"
+            >
+              <span class="nav-name" x-text="type.name"></span>
+            </div>
+          </template>
+          <button class="nav-manage" @click="showManageModal = true" title="管理文件类型">⚙️</button>
+        </div>
+      </div>
+
+      <!-- 目录列表 -->
+      <div class="directory-panel">
+        <div class="loading" x-show="loading">
+          <div>正在扫描...</div>
+          <div style="font-size: 12px; margin-top: 8px;">正在搜索包含该文件类型最多的目录</div>
+        </div>
+
+        <template x-for="(dir, index) in topDirectories" :key="index">
+          <div class="directory-item">
+            <div class="dir-info">
+              <div class="dir-path" @click="openDirectory(dir.path)" x-text="dir.path"></div>
+              <div class="dir-count" x-text="dir.count + ' 个文件'"></div>
+            </div>
+            <div class="dir-actions">
+              <button class="btn-open" @click="openDirectory(dir.path)" title="打开目录">📂</button>
+              <button class="btn-shortcut" @click="createShortcut(dir.path)" title="创建快捷方式">🔗</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Everything 未安装提示 -->
+        <div class="empty-state everything-missing" x-show="!loading && everythingNotFound">
+          <div class="icon">⚠️</div>
+          <div>未检测到 Everything CLI</div>
+          <div style="margin-top: 8px; font-size: 13px;">
+            请安装 Everything 并下载命令行工具 (es.exe)
+          </div>
+          <div style="margin-top: 8px; font-size: 13px;">
+            <a href="https://www.voidtools.com" target="_blank" style="color: #1890ff; text-decoration: underline;">https://www.voidtools.com</a>
+          </div>
+        </div>
+
+        <!-- 无结果 -->
+        <div class="empty-state" x-show="!loading && !everythingNotFound && topDirectories.length === 0">
+          <div class="icon">🔍</div>
+          <div>未找到相关文件</div>
+          <div style="margin-top: 8px; font-size: 13px;">该文件类型在系统中暂无文件</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加类型弹窗 -->
+    <div class="modal" x-show="showAddModal" @click.self="showAddModal = false">
+      <div class="modal-content">
+        <h3>添加文件类型</h3>
+        <div class="form-group">
+          <label>名称</label>
+          <input type="text" x-model="newType.name" placeholder="如：PDF文档">
+        </div>
+        <div class="form-group">
+          <label>扩展名（用逗号分隔，不要带点）</label>
+          <input type="text" x-model="newType.extensions" placeholder="如：pdf, epub">
+        </div>
+        <div class="form-group">
+          <label>图标（Emoji，可选）</label>
+          <input type="text" x-model="newType.icon" placeholder="如：📄">
+        </div>
+        <div class="form-group">
+          <label>颜色</label>
+          <input type="color" x-model="newType.color" style="height: 36px; padding: 2px;">
+        </div>
+        <div class="form-group">
+          <label>描述（可选，不填则自动使用扩展名）</label>
+          <input type="text" x-model="newType.description" placeholder="如：PDF 电子书文件">
+        </div>
+        <div class="modal-actions">
+          <button @click="addType()" title="添加">💾</button>
+          <button @click="showAddModal = false" title="取消">❌</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑类型弹窗 -->
+    <div class="modal" x-show="showEditModal" @click.self="showEditModal = false">
+      <div class="modal-content">
+        <h3>编辑文件类型</h3>
+        <div class="form-group">
+          <label>名称</label>
+          <input type="text" x-model="editType.name" placeholder="如：PDF文档">
+        </div>
+        <div class="form-group">
+          <label>扩展名（用逗号分隔，不要带点）</label>
+          <input type="text" x-model="editType.extensions" placeholder="如：pdf, epub">
+        </div>
+        <div class="form-group">
+          <label>图标（Emoji，可选）</label>
+          <input type="text" x-model="editType.icon" placeholder="如：📄">
+        </div>
+        <div class="form-group">
+          <label>颜色</label>
+          <input type="color" x-model="editType.color" style="height: 36px; padding: 2px;">
+        </div>
+        <div class="form-group">
+          <label>描述（可选，不填则自动使用扩展名）</label>
+          <input type="text" x-model="editType.description" placeholder="如：PDF 电子书文件">
+        </div>
+        <div class="modal-actions">
+          <button @click="saveEditType()" title="保存">💾</button>
+          <button @click="showEditModal = false" title="取消">❌</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 管理文件类型弹窗 -->
+    <div class="modal" x-show="showManageModal" @click.self="showManageModal = false">
+      <div class="modal-content manage-modal">
+        <h3>管理文件类型</h3>
+        <div class="manage-list">
+          <template x-for="(type, index) in fileTypes" :key="type.id">
+            <div class="manage-item">
+              <div class="manage-item-info">
+                <span class="manage-item-name" :style="{ color: type.color }" x-text="type.name"></span>
+                <span class="manage-item-ext" x-text="type.extensions.join(', ')"></span>
+              </div>
+              <div class="manage-item-actions">
+                <button class="manage-btn-edit" @click="openEditModalFromManage(index)" title="编辑">✏️</button>
+                <button class="manage-btn-delete" @click="deleteTypeFromManage(index)" title="删除">🗑️</button>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="modal-actions">
+          <button @click="showAddModal = true; showManageModal = false" title="添加新类型">➕</button>
+          <button @click="showManageModal = false" title="关闭">❌</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

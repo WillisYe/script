@@ -1,0 +1,21 @@
+{
+  "name": "json-diff",
+  "version": "1.0.0",
+  "description": "对比两个JS对象的差异，用于接口重构前后参数对比",
+  "main": "index.html",
+  "logo": "logo.png",
+  "features": [
+    {
+      "code": "jsondiff",
+      "explain": "对比JSON对象差异",
+      "cmds": [
+        "json diff",
+        "jsondiff",
+        "对比",
+        "diff"
+      ]
+    }
+  ],
+  "platform": ["win32", "darwin", "linux"],
+  "title": "JSON对象对比"
+}

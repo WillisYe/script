@@ -1,0 +1,29 @@
+{
+  "version": "1.0.1",
+  "name": "html-render",
+  "description": "html-render",
+  "logo": "logo.png",
+  "preload": "preload.js",
+  "features": [
+    {
+      "code": "html",
+      "explain": "html-render",
+      "cmds": [
+        {
+          "type": "regex",
+          "match": "/<!DOCTYPE html>.*/",
+          "label": "html-render"
+        }
+      ],
+      "mainHide": true
+    }
+  ],
+  "platform": [
+    "win32",
+    "darwin",
+    "linux"
+  ],
+  "author": "Aaron",
+  "homepage": null,
+  "title": "html-render"
+}

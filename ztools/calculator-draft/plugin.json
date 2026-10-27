@@ -1,0 +1,30 @@
+{
+  "main": "index.html",
+  "logo": "logo.png",
+  "pluginSetting": {
+    "single": false
+  },
+  "features": [
+    {
+      "code": "calc",
+      "explain": "表达式计算",
+      "mainPush": true,
+      "cmds": [
+        "计算",
+        "calc",
+        {
+          "type": "regex",
+          "match": "/^\\(*[+-]?(?:\\d{1,15}|\\d{1,3}(?:,\\d\\d\\d){1,4})(?:\\.\\d{1,15})?%?\\)*(?:\\s*[+*/^%-]\\s*\\(*[+-]?(?:\\d{1,15}|\\d{1,3}(?:,\\d\\d\\d){1,4})(?:\\.\\d{1,15})?%?\\)*)+$/",
+          "label": "计算"
+        }
+      ]
+    }
+  ],
+  "name": "calc-draft",
+  "pluginName": "计算",
+  "description": "输入算式自动计算结果",
+  "author": "User",
+  "homepage": "",
+  "version": "1.0.0",
+  "title": "计算"
+}

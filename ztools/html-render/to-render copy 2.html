@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>居中省略 - 最简版</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      background: linear-gradient(90deg, #00d9ff, #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .input-group {
+      margin-bottom: 16px;
+    }
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #aaa;
+      font-size: 0.9rem;
+    }
+    .input-group input, .input-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.3);
+      color: #fff;
+      font-size: 1rem;
+    }
+    .input-group textarea { min-height: 80px; resize: vertical; font-family: inherit; }
+    .btn {
+      background: linear-gradient(135deg, #00d9ff, #00ff88);
+      color: #0f0f23;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+    .btn:hover { opacity: 0.9; }
+    .result {
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .preview {
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .preview-label {
+      color: #888;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+    }
+    .original { color: #ff6b6b; }
+    .truncated { color: #00ff88; margin-top: 12px; }
+    .code {
+      background: #0d1117;
+      padding: 16px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #c9d1d9;
+      overflow-x: auto;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      margin: 4px 4px 4px 0;
+    }
+    .badge.green { background: rgba(0,255,136,0.2); color: #00ff88; }
+    .badge.blue { background: rgba(0,217,255,0.2); color: #00d9ff; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎯 居中省略 - 最简实现</h1>
+
+    <div class="card">
+      <div style="margin-bottom: 16px;">
+        <span class="badge green">✅ 无需 Pretext</span>
+        <span class="badge blue">⚡ 纯 Canvas API</span>
+        <span class="badge green">📦 仅 50 行代码</span>
+      </div>
+
+      <div class="input-group">
+        <label>📝 文本内容</label>
+        <textarea id="text">/Users/developer/projects/very-long-application-name/src/components/FileName.tsx</textarea>
+      </div>
+
+      <div class="input-group">
+        <label>🔤 字体</label>
+        <input id="font" value='14px "SF Mono", monospace'/>
+      </div>
+
+      <div class="input-group">
+        <label>📏 最大宽度 (px)</label>
+        <input id="maxWidth" type="number" value="300" min="100" max="800"/>
+      </div>
+
+      <div class="input-group">
+        <label>⚖️ 前后比例 (0.3-0.7)</label>
+        <input id="ratio" type="range" min="0.3" max="0.7" step="0.1" value="0.5"/>
+        <small style="color:#888" id="ratioDisplay">50% : 50%</small>
+      </div>
+
+      <button class="btn" onclick="truncate()">✨ 生成居中省略</button>
+
+      <div class="result" id="result" style="display:none;">
+        <div class="result-row">
+          <span>原始宽度</span>
+          <span id="originalWidth">-</span>
+        </div>
+        <div class="result-row">
+          <span>截断后宽度</span>
+          <span id="truncatedWidth">-</span>
+        </div>
+        <div class="result-row">
+          <span>字符数</span>
+          <span id="charCount">-</span>
+        </div>
+      </div>
+
+      <div class="preview" id="preview" style="display:none;">
+        <div class="preview-label">原始文本</div>
+        <div class="original" id="previewOriginal"></div>
+        <div class="preview-label" style="margin-top:12px;">居中省略后</div>
+        <div class="truncated" id="previewTruncated"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-bottom:16px;color:#00d9ff;">💻 核心代码（仅 30 行）</h3>
+      <div class="code">
+// 🎯 测量文本宽度
+function measureWidth(text, font) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.font = font;
+  return ctx.measureText(text).width;
+}
+
+// 🎯 居中省略主函数
+function truncateMiddle(text, font, maxWidth, ellipsis = '...', ratio = 0.5) {
+  const originalWidth = measureWidth(text, font);
+
+  // 不需要截断
+  if (originalWidth <= maxWidth) {
+    return { text, width: originalWidth, truncated: false };
+  }
+
+  // 二分查找最佳截断点
+  let left = 0, right = text.length;
+  let best = null;
+
+  while (left <= right) {
+    const mid = Math.floor((left + right) / 2);
+    const prefixLen = Math.floor(mid * ratio);
+    const suffixLen = mid - prefixLen;
+
+    const candidate = text.slice(0, prefixLen) + ellipsis +
+                      text.slice(-suffixLen || undefined);
+    const width = measureWidth(candidate, font);
+
+    if (width <= maxWidth) {
+      best = { text: candidate, width, truncated: true };
+      left = mid + 1;
+    } else {
+      right = mid - 1;
+    }
+  }
+
+  return best || { text: ellipsis, width: measureWidth(ellipsis, font), truncated: true };
+}
+
+// 🚀 使用示例
+const result = truncateMiddle(longText, '14px monospace', 300);
+console.log(result.text);  // "very-long-...-FileName.tsx"
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 比例显示更新
+    document.getElementById('ratio').addEventListener('input', (e) => {
+      const r = parseFloat(e.target.value);
+      document.getElementById('ratioDisplay').textContent =
+        `${Math.round(r*100)}% : ${Math.round((1-r)*100)}%`;
+    });
+
+    // 居中省略核心函数
+    function measureWidth(text, font) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.font = font;
+      return ctx.measureText(text).width;
+    }
+
+    function truncateMiddle(text, font, maxWidth, ellipsis = '...', ratio = 0.5) {
+      const originalWidth = measureWidth(text, font);
+
+      if (originalWidth <= maxWidth) {
+        return { text, width: originalWidth, truncated: false };
+      }
+
+      let left = 0, right = text.length;
+      let best = null;
+
+      while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const prefixLen = Math.floor(mid * ratio);
+        const suffixLen = mid - prefixLen;
+
+        const candidate = text.slice(0, prefixLen) + ellipsis +
+                          text.slice(-suffixLen || undefined);
+        const width = measureWidth(candidate, font);
+
+        if (width <= maxWidth) {
+          best = { text: candidate, width, truncated: true };
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
+      }
+
+      return best || { text: ellipsis, width: measureWidth(ellipsis, font), truncated: true };
+    }
+
+    // 执行函数
+    function truncate() {
+      const text = document.getElementById('text').value;
+      const font = document.getElementById('font').value;
+      const maxWidth = parseInt(document.getElementById('maxWidth').value);
+      const ratio = parseFloat(document.getElementById('ratio').value);
+
+      const result = truncateMiddle(text, font, maxWidth, '...', ratio);
+
+      // 显示结果
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('originalWidth').textContent =
+        `${measureWidth(text, font).toFixed(1)}px`;
+      document.getElementById('truncatedWidth').textContent =
+        `${result.width.toFixed(1)}px`;
+      document.getElementById('charCount').textContent =
+        `${text.length} → ${result.text.length}`;
+
+      // 显示预览
+      document.getElementById('preview').style.display = 'block';
+      document.getElementById('previewOriginal').textContent = text;
+      document.getElementById('previewTruncated').textContent = result.text;
+      document.getElementById('previewOriginal').style.font = font;
+      document.getElementById('previewTruncated').style.font = font;
+    }
+
+    // 页面加载后自动运行
+    window.addEventListener('load', () => {
+      setTimeout(truncate, 300);
+    });
+  </script>
+</body>
+</html>

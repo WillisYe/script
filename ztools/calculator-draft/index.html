@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>计算器</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .history-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      border-bottom: 1px solid #e8e8e8;
+      transition: background-color 0.2s;
+    }
+
+    .history-item:hover {
+      background-color: #fafafa;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .expression {
+      font-size: 16px;
+      color: #333;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .result {
+      font-size: 18px;
+      color: #666;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    .result::before {
+      content: '= ';
+      color: #999;
+    }
+
+    .input-area {
+      background: #e8dfc8;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-wrapper::before {
+      /* content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 2px;
+      height: 20px;
+      background: #666;
+      animation: blink 1s infinite; */
+    }
+
+    @keyframes blink {
+
+      0%,
+      50% {
+        opacity: 1;
+      }
+
+      51%,
+      100% {
+        opacity: 0;
+      }
+    }
+
+    #formulaInput {
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      color: #333;
+      font-family: 'Consolas', 'Monaco', monospace;
+      padding: 8px 12px;
+      outline: none;
+    }
+
+    #formulaInput::placeholder {
+      color: #999;
+    }
+
+    .equals-btn {
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      color: #666;
+      cursor: pointer;
+      padding: 8px 12px;
+      transition: color 0.2s;
+    }
+
+    .equals-btn:hover {
+      color: #333;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    .clear-btn {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 4px 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .input-wrapper:hover .clear-btn,
+    .input-wrapper:focus-within .clear-btn {
+      opacity: 1;
+    }
+
+    .clear-btn:hover {
+      color: #666;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="history-list" id="historyList">
+      <div class="empty-state">
+        <p>输入算式开始计算</p>
+      </div>
+    </div>
+    <div class="input-area">
+      <div class="input-wrapper">
+        <input type="text" id="formulaInput" placeholder="计算公式" autocomplete="off">
+        <button class="clear-btn" id="clearBtn" title="清空">×</button>
+      </div>
+      <button class="equals-btn" id="equalsBtn">=</button>
+    </div>
+  </div>
+
+  <script>
+    const formulaInput = document.getElementById('formulaInput');
+    const historyList = document.getElementById('historyList');
+    const equalsBtn = document.getElementById('equalsBtn');
+    const clearBtn = document.getElementById('clearBtn');
+
+    let history = [];
+
+    // 安全计算表达式
+    function calculate(expression) {
+      try {
+        // 清理表达式
+        const cleanExpr = expression.replace(/\s/g, '');
+
+        // 只允许数字和运算符
+        if (!/^[\d+\-*/().]+$/.test(cleanExpr)) {
+          return null;
+        }
+
+        // 检查括号匹配
+        let bracketCount = 0;
+        for (const char of cleanExpr) {
+          if (char === '(') bracketCount++;
+          if (char === ')') bracketCount--;
+          if (bracketCount < 0) return null;
+        }
+        if (bracketCount !== 0) return null;
+
+        // 使用 Function 进行安全计算
+        const result = new Function('return ' + cleanExpr)();
+
+        // 检查结果是否有效
+        if (!isFinite(result) || isNaN(result)) {
+          return null;
+        }
+
+        // 格式化结果
+        if (Number.isInteger(result)) {
+          return result;
+        } else {
+          return parseFloat(result.toFixed(10));
+        }
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // 添加到历史记录
+    function addToHistory(expression, result) {
+      history.unshift({ expression, result });
+      renderHistory();
+    }
+
+    // 渲染历史记录
+    function renderHistory() {
+      if (history.length === 0) {
+        historyList.innerHTML = '<div class="empty-state"><p>输入算式开始计算</p></div>';
+        return;
+      }
+
+      historyList.innerHTML = history.toReversed().map(item => `
+        <div class="history-item">
+          <span class="expression">${escapeHtml(item.expression)}</span>
+          <span class="result">${item.result}</span>
+        </div>
+      `).join('');
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 处理输入
+    function handleInput() {
+      const value = formulaInput.value.trim();
+      if (!value) return;
+
+      const result = calculate(value);
+      if (result !== null) {
+        addToHistory(value, result);
+        formulaInput.value = '';
+      }
+    }
+
+    // 事件监听
+    formulaInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        handleInput();
+      }
+    });
+
+    equalsBtn.addEventListener('click', handleInput);
+
+    clearBtn.addEventListener('click', () => {
+      formulaInput.value = '';
+      formulaInput.focus();
+    });
+
+    // 自动聚焦
+    formulaInput.focus();
+
+    window.ztools.onPluginEnter(({ payload }) => {
+      if (payload) {
+        const result = calculate(payload);
+        if (result !== null) {
+          addToHistory(payload, result);
+          formulaInput.value = '';
+        } else {
+          // formulaInput.value = payload;
+        }
+      }
+      formulaInput.focus();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+{
+  "name": "file-type-manager",
+  "version": "1.0.0",
+  "description": "文件类型管理器 - 管理和浏览不同文件类型的目录",
+  "main": "index.html",
+  "preload": "preload.js",
+  "logo": "logo.png",
+  "platform": [
+    "win32"
+  ],
+  "features": [
+    {
+      "code": "filetype",
+      "explain": "文件类型管理",
+      "mainPush": true,
+      "cmds": [
+        "文件类型",
+        "filetype",
+        "ftype",
+        {
+          "type": "regex",
+          "match": "/^filetype\\s*\\S*/i",
+          "label": "文件类型管理"
+        },
+        {
+          "type": "regex",
+          "match": "/^\\.(jpg|jpeg|png|gif|bmp|webp|svg|tiff|ico|mp4|avi|mkv|mov|wmv|flv|mpeg|rmvb|mp3|wav|flac|aac|ogg|wma|m4a|doc|docx|xls|xlsx|crx|vsix)$/i",
+          "label": "文件类型管理"
+        },
+        {
+          "type": "regex",
+          "match": "/^(图片|视频|音频|浏览器插件|vscode插件|word|excel)$/i",
+          "label": "文件类型管理"
+        }
+      ]
+    }
+  ],
+  "title": "文件类型管理器"
+}

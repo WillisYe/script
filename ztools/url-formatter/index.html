@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL参数格式化</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 16px;
+      min-height: 100vh;
+    }
+    .header { margin-bottom: 16px; }
+    .header h1 { font-size: 18px; color: #333; margin-bottom: 4px; }
+    .header p { font-size: 13px; color: #999; }
+
+    .input-section { position: relative; margin-bottom: 12px; }
+    .input-section textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    .input-section textarea:focus { border-color: #52c41a; }
+    .char-count {
+      position: absolute;
+      right: 10px;
+      bottom: 8px;
+      font-size: 12px;
+      color: #bbb;
+      pointer-events: none;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .encoding-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #666;
+    }
+    .encoding-select select {
+      padding: 5px 8px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 13px;
+      outline: none;
+      background: #fff;
+    }
+    .btn {
+      padding: 6px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-green { background: #52c41a; color: #fff; }
+    .btn-green:hover { background: #73d13d; }
+    .btn-red { background: #ff4d4f; color: #fff; }
+    .btn-red:hover { background: #ff7875; }
+
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    .base-url-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #f0f0f0;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+    .base-url-row .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      flex-shrink: 0;
+      background: #d9d9d9;
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+    .base-url-row .value { font-size: 13px; color: #333; }
+
+    .copy-row { margin-bottom: 12px; }
+
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .param-table th {
+      background: #595959;
+      color: #fff;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .param-table td {
+      padding: 10px 14px;
+      font-size: 13px;
+      border-bottom: 1px solid #f0f0f0;
+      word-break: break-all;
+    }
+    .param-table tr:nth-child(even) td { background: #fafafa; }
+    .param-table tr:nth-child(odd) td { background: #fff; }
+    .param-table .key-col { color: #1890ff; font-weight: 500; white-space: nowrap; width: 140px; }
+    .param-table .val-col { color: #333; }
+
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-40px);
+      background: #333;
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>URL 参数格式化</h1>
+    <p>解析和格式化 URL 查询参数，将参数整理成表格，方便查看和分析。</p>
+  </div>
+
+  <div class="input-section">
+    <textarea id="urlInput" spellcheck="false" placeholder="粘贴带参数的URL，例如：https://example.com/path?key=value&foo=bar"></textarea>
+    <span class="char-count" id="charCount">0</span>
+  </div>
+
+  <div class="controls">
+    <div class="encoding-select">
+      <span>字符编码：</span>
+      <select id="encodingSelect">
+        <option value="utf-8">UTF-8</option>
+        <option value="gbk">GBK</option>
+        <option value="gb2312">GB2312</option>
+        <option value="iso-8859-1">ISO-8859-1</option>
+      </select>
+    </div>
+    <button class="btn btn-green" onclick="loadExample()">★ 示例</button>
+    <button class="btn btn-green" onclick="formatUrl()">URL 参数格式化</button>
+    <button class="btn btn-red" onclick="clearAll()">清空</button>
+  </div>
+
+  <div class="results" id="results">
+    <div class="base-url-row">
+      <span class="label">URL</span>
+      <span class="value" id="baseUrl"></span>
+    </div>
+    <div class="copy-row">
+      <button class="btn btn-green" onclick="copyKeyValues()">复制键值</button>
+    </div>
+    <table class="param-table">
+      <thead><tr><th>键</th><th>值</th></tr></thead>
+      <tbody id="paramBody"></tbody>
+    </table>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const urlInput = document.getElementById('urlInput');
+    const charCount = document.getElementById('charCount');
+    const results = document.getElementById('results');
+    const baseUrlEl = document.getElementById('baseUrl');
+    const paramBody = document.getElementById('paramBody');
+    const encodingSelect = document.getElementById('encodingSelect');
+
+    let lastParams = [];
+
+    urlInput.addEventListener('input', () => {
+      charCount.textContent = urlInput.value.length;
+    });
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1500);
+    }
+
+    function decodeValue(val, encoding) {
+      try {
+        return decodeURIComponent(val);
+      } catch {
+        return val;
+      }
+    }
+
+    function parseUrl(rawUrl, encoding) {
+      // 分离基础URL和查询参数
+      const qIndex = rawUrl.indexOf('?');
+      if (qIndex === -1) return { base: rawUrl, params: [] };
+
+      const base = rawUrl.substring(0, qIndex);
+      const queryStr = rawUrl.substring(qIndex + 1);
+      const pairs = queryStr.split('&').filter(Boolean);
+      const params = pairs.map(pair => {
+        const eqIndex = pair.indexOf('=');
+        if (eqIndex === -1) return { key: decodeValue(pair, encoding), value: '' };
+        const key = decodeValue(pair.substring(0, eqIndex), encoding);
+        const value = decodeValue(pair.substring(eqIndex + 1), encoding);
+        return { key, value };
+      });
+      return { base, params };
+    }
+
+    function formatUrl() {
+      const raw = urlInput.value.trim();
+      if (!raw) { showToast('请输入URL'); return; }
+
+      const encoding = encodingSelect.value;
+      const { base, params } = parseUrl(raw, encoding);
+
+      baseUrlEl.textContent = base;
+      lastParams = params;
+
+      if (params.length === 0) {
+        paramBody.innerHTML = '<tr><td colspan="2" style="text-align:center;color:#999;padding:20px;">无查询参数</td></tr>';
+      } else {
+        paramBody.innerHTML = params.map(p =>
+          `<tr><td class="key-col">${escapeHtml(p.key)}</td><td class="val-col">${escapeHtml(p.value)}</td></tr>`
+        ).join('');
+      }
+      results.classList.add('visible');
+    }
+
+    function copyKeyValues() {
+      if (lastParams.length === 0) { showToast('无参数可复制'); return; }
+      const text = lastParams.map(p => `${p.key} = ${p.value}`).join('\n');
+      navigator.clipboard.writeText(text).then(() => showToast('已复制键值'));
+    }
+
+    function clearAll() {
+      urlInput.value = '';
+      charCount.textContent = '0';
+      results.classList.remove('visible');
+      lastParams = [];
+      urlInput.focus();
+    }
+
+    function loadExample() {
+      const example = 'https://testincsz.shinetour.com/inc/#/common/index?goto=https%3a%2f%2ftestincsz.shinetour.com%2finc%2f%23%2fonlineService%3ffromoa%3d1&GID=5bd1ae284c9c40b7a4fe1f27b1b4ebb3';
+      urlInput.value = example;
+      charCount.textContent = example.length;
+      formatUrl();
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    // 插件入口
+    window.ztools.onPluginEnter(({ payload }) => {
+      const url = (payload || '').trim();
+      if (!url) return;
+      urlInput.value = url;
+      charCount.textContent = url.length;
+      formatUrl();
+    });
+
+    // 回车触发格式化
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        formatUrl();
+      }
+    });
+  </script>
+</body>
+</html>

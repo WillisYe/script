@@ -1,0 +1,22 @@
+{
+  "name": "swagger-finder",
+  "version": "1.0.0",
+  "description": "根据接口URL猜测Swagger文档地址",
+  "main": "index.html",
+  "logo": "logo.png",
+  "features": [
+    {
+      "code": "swagger",
+      "explain": "猜测接口文档地址",
+      "cmds": [
+        {
+          "type": "regex",
+          "match": "/^https?:\\/\\/.+/i",
+          "label": "猜测接口文档"
+        }
+      ]
+    }
+  ],
+  "platform": ["win32", "darwin", "linux"],
+  "title": "接口文档猜测"
+}

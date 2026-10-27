@@ -1,0 +1,22 @@
+{
+  "name": "url-formatter",
+  "version": "1.0.0",
+  "description": "解析和格式化URL查询参数，将参数整理成表格，方便查看和分析",
+  "main": "index.html",
+  "logo": "logo.png",
+  "features": [
+    {
+      "code": "urlfmt",
+      "explain": "URL参数格式化",
+      "cmds": [
+        {
+          "type": "regex",
+          "match": "/^https?:\\/\\/.+\\?.+/i",
+          "label": "URL参数格式化"
+        }
+      ]
+    }
+  ],
+  "platform": ["win32", "darwin", "linux"],
+  "title": "URL参数格式化"
+}

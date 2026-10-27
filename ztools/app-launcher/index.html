@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>应用启动器</title>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div x-data="appLauncher()" x-init="init()" @keydown.window="handleKeyDown($event)" @click.away="contextMenu.show = false" x-cloak>
+    <div class="search-page">
+      <div class="main-content" :class="{ 'active': activePanel === 'search' && currentKeyword && searchResults.length > 0 }">
+        <div class="list-box" id="listBox" x-ref="listBox">
+          <!-- 空结果提示 -->
+          <template x-if="currentKeyword && searchResults.length === 0">
+            <div class="list-empty-section">
+              <div class="icon">🔍</div>
+              <div>未找到相关应用</div>
+              <div style="margin-top: 4px; font-size: 12px;">试试输入更短的关键词</div>
+            </div>
+          </template>
+
+          <!-- 搜索结果 -->
+          <template x-if="currentKeyword && searchResults.length > 0">
+            <div>
+              <div class="section-header">搜索结果</div>
+              <template x-for="(app, index) in searchResults" :key="app.path">
+                <div 
+                  class="app-item"
+                  :class="{ 'selected': index === selectedIndex }"
+                  @click="launchApp(index, 'search')"
+                  @contextmenu.prevent="showContextMenu($event, index, 'search')"
+                  :title="app.path"
+                  :data-index="index"
+                >
+                  <div class="app-icon">📦</div>
+                  <div class="app-info">
+                    <div class="app-name">
+                      <span x-text="app.name"></span>
+                      <span x-show="app.score !== undefined" class="match-score" x-text="app.score + '分'"></span>
+                    </div>
+                    <div class="app-path" x-text="app.path"></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+        </div>
+        <div class="footer-total">
+          <template x-if="currentKeyword">
+            <span>搜索结果: <span x-text="searchResults.length"></span> 条</span>
+          </template>
+          <template x-if="!currentKeyword">
+            <span>最近启动: <span x-text="historyResults.length"></span> 条</span>
+          </template>
+        </div>
+      </div>
+
+      <div class="history-sidebar" :class="{ 'active': activePanel === 'history' }">
+        <div class="history-header">最近启动</div>
+        <div class="history-list" id="historyList" x-ref="historyList">
+          <!-- 空历史记录 -->
+          <template x-if="historyResults.length === 0">
+            <div class="list-empty-section">
+              <div class="icon">📋</div>
+              <div>暂无历史记录</div>
+            </div>
+          </template>
+
+          <!-- 历史记录列表 -->
+          <template x-for="(app, index) in historyResults" :key="app.path">
+            <div
+              class="app-item history"
+              :class="{ 'selected': index === selectedHistoryIndex }"
+              @click="launchApp(index, 'history')"
+              @contextmenu.prevent="showContextMenu($event, index, 'history')"
+              :title="app.path"
+              :data-index="index"
+            >
+              <div class="app-icon">🕐</div>
+              <div class="app-info">
+                <div class="app-name">
+                  <span x-text="app.name"></span>
+                  <span x-show="app.score !== undefined" class="match-score" x-text="app.score + '分'"></span>
+                </div>
+                <div class="app-path" x-text="app.path"></div>
+              </div>
+            </div>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右键菜单 -->
+    <div 
+      x-show="contextMenu.show" 
+      class="context-menu"
+      :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+      x-transition
+    >
+      <!-- 搜索结果菜单 -->
+      <template x-if="contextMenu.type === 'search'">
+        <div>
+          <div class="context-menu-item" @click="openFileLocation(contextMenu.app?.path)">
+            <span>📁</span>
+            <span>打开文件位置</span>
+          </div>
+          <div class="context-menu-item" @click="copyPath(contextMenu.app?.path)">
+            <span>📋</span>
+            <span>复制路径</span>
+          </div>
+        </div>
+      </template>
+
+      <!-- 历史记录菜单 -->
+      <template x-if="contextMenu.type === 'history'">
+        <div>
+          <div class="context-menu-item" @click="pinToTop(contextMenu.index, 'history')">
+            <span>📌</span>
+            <span>置顶</span>
+          </div>
+          <div class="context-menu-item" @click="openFileLocation(contextMenu.app?.path)">
+            <span>📁</span>
+            <span>打开文件位置</span>
+          </div>
+          <div class="context-menu-item" @click="copyPath(contextMenu.app?.path)">
+            <span>📋</span>
+            <span>复制路径</span>
+          </div>
+          <div class="context-menu-divider"></div>
+          <div class="context-menu-item danger" @click="deleteFromHistory(contextMenu.index, 'history')">
+            <span>🗑️</span>
+            <span>删除</span>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
