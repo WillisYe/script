@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         GitHub Release 增强
-// @namespace    http://tampermonkey.net/
-// @version      2.9.1
+// @name         GitHub Release 增强（自用修改版）
+// @namespace    my-local-script
+// @version      999.0.0
 // @description  github release 文件安装包分组、添加平台标签；根据用户当前系统/架构排序，推荐最可能安装的文件；更新日志可手动折叠
 // @author       caolib
 // @match        https://github.com/*
@@ -10,8 +10,8 @@
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
 // @license      MIT
-// @downloadURL https://update.greasyfork.org/scripts/566231/GitHub%20Release%20%E5%A2%9E%E5%BC%BA%E6%98%BE%E7%A4%BA.user.js
-// @updateURL https://update.greasyfork.org/scripts/566231/GitHub%20Release%20%E5%A2%9E%E5%BC%BA%E6%98%BE%E7%A4%BA.meta.js
+// @downloadURL （已禁用自动更新）
+// @updateURL （已禁用自动更新）
 // ==/UserScript==
 
 (function () {
