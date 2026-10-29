@@ -2,13 +2,14 @@
 // @name         GitHub Release 增强（自用修改版）
 // @namespace    my-local-script
 // @version      999.0.0
-// @description  github release 文件安装包分组、添加平台标签；根据用户当前系统/架构排序，推荐最可能安装的文件；更新日志可手动折叠
+// @description  GitHub Release 增强：文件安装包分组排序、平台标签、架构推荐；代理测速、加速下载、全局代理选择；更新日志可折叠
 // @author       caolib
 // @match        https://github.com/*
 // @icon         https://github.githubassets.com/pinned-octocat.svg
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_registerMenuCommand
+// @grant        GM_xmlhttpRequest
 // @license      MIT
 // @downloadURL （已禁用自动更新）
 // @updateURL （已禁用自动更新）
@@ -149,61 +150,11 @@
                         border-color: var(--color-attention-emphasis, #9e6a03) !important;
                     }
 
-            /* 第三方代理按钮的下拉菜单样式 */
-            .gh-proxy-dropdown { position: relative; display: flex; align-items: center; }
-            .gh-proxy-dropdown::after { content: ""; position: absolute; top: 100%; left: 0; right: 0; height: 10px; z-index: 998; }
-            .gh-proxy-dropdown-menu {
-                display: none; position: absolute; right: 0; top: 100%; z-index: 999;
-                min-width: 80px; padding: 4px 0; margin-top: 4px;
-                background-color: var(--overlay-bgColor, var(--color-canvas-overlay));
-                border: 1px solid var(--border-color-default, var(--color-border-default));
-                border-radius: 6px;
-                box-shadow: var(--shadow-floating-large, 0 8px 24px rgba(140,149,159,0.2));
-            }
-            .gh-proxy-dropdown:hover .gh-proxy-dropdown-menu { display: block; }
-            .gh-proxy-menu-item {
-                display: block !important; padding: 4px 16px !important; margin: 0 !important;
-                border: none !important; border-radius: 0 !important; background: transparent !important;
-                color: var(--fgColor-default, var(--color-fg-default)) !important; text-decoration: none !important;
-                font-size: 12px !important; text-align: center !important; line-height: 1.5 !important;
-            }
-            .gh-proxy-menu-item:hover {
-                background-color: var(--controlAction-bgColor-hover, var(--color-action-list-item-default-hover-bg)) !important;
-                text-decoration: none !important;
-            }
             .gh-proxy-container {
                 margin-left: 8px;
                 display: flex;
                 align-items: center;
                 flex-shrink: 0;
-            }
-            .XIU2-RS {
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                flex-wrap: wrap;
-            }
-            .XIU2-RS a.btn {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0 6px;
-                margin-right: -1px;
-                border-radius: 2px;
-                background-color: var(--button-default-bgColor-rest, var(--color-btn-bg, #21262d));
-                border: 1px solid var(--button-default-borderColor-rest, var(--color-btn-border, rgba(240,246,252,0.1)));
-                color: var(--button-default-fgColor-rest, var(--color-btn-text, #c9d1d9));
-                font-size: 11px;
-                line-height: 20px;
-                text-decoration: none;
-            }
-            .XIU2-RS a.btn:hover {
-                background-color: var(--button-default-bgColor-hover, var(--color-btn-hover-bg, #30363d));
-                border-color: var(--button-default-borderColor-hover, var(--color-btn-hover-border, rgba(240,246,252,0.3)));
-                text-decoration: none;
-            }
-            .XIU2-RS.gh-xiu2-hidden {
-                display: none !important;
             }
 
             /* OS / 架构 切换下拉框 */
@@ -370,22 +321,36 @@
 
     // --- 工具函数 ---
 
-    function getCurrentOS() {
-        const ua = navigator.userAgent.toLowerCase();
-        if (ua.includes('win')) return 'windows';
-        if (ua.includes('mac')) return 'mac';
-        if (ua.includes('android')) return 'android';
-        if (ua.includes('iphone') || ua.includes('ipad')) return 'ios';
-        if (ua.includes('linux')) return 'linux';
-        return 'unknown';
-    }
-
     const DEFAULT_OS = 'windows';
     const DEFAULT_ARCH = 'x86_64';
 
     let _selectedOS = null;
     let _selectedArch = null;
     const _processedDetails = [];
+
+    // 全局测速缓存 { results: [...], timestamp: number }
+    let _globalSpeedTestCache = null;
+    const SPEED_CACHE_KEY = 'gh_release_speed_cache';
+
+    function loadSpeedCache() {
+        try {
+            const raw = GM_getValue(SPEED_CACHE_KEY, null);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.timestamp) {
+                    _globalSpeedTestCache = parsed;
+                }
+            }
+        } catch (e) {
+            // 解析失败，忽略
+        }
+    }
+
+    function saveSpeedCache() {
+        if (_globalSpeedTestCache) {
+            GM_setValue(SPEED_CACHE_KEY, JSON.stringify(_globalSpeedTestCache));
+        }
+    }
 
     function getActiveOS() {
         return _selectedOS || DEFAULT_OS;
@@ -417,27 +382,6 @@
         { value: 'x86', label: 'x86' },
         { value: 'arm32', label: 'arm32' },
     ];
-
-    function getCurrentArch() {
-        // 优先使用 User-Agent Client Hints
-        if (navigator.userAgentData && navigator.userAgentData.arch) {
-            const arch = String(navigator.userAgentData.arch).toLowerCase();
-            if (arch.includes('arm64') || arch.includes('aarch64')) return 'arm64';
-            if (arch === 'arm' || arch.includes('arm32') || arch.includes('armv7')) return 'arm32';
-            if (arch.includes('x86_64') || arch === 'amd64' || arch === 'x64') return 'x86_64';
-            if (arch.includes('x86') || arch.includes('i386') || arch.includes('i686')) return 'x86';
-        }
-        const platform = String(navigator.platform || '').toLowerCase();
-        const ua = navigator.userAgent.toLowerCase();
-        if (platform.includes('aarch64') || platform.includes('arm64') || ua.includes('aarch64') || ua.includes('arm64')) return 'arm64';
-        if (platform.includes('win64') || platform.includes('x64') || platform.includes('x86_64') || ua.includes('win64') || ua.includes('x86_64') || ua.includes('wow64')) return 'x86_64';
-        if (platform.includes('arm') || ua.includes('armv7') || ua.includes('armhf')) return 'arm32';
-        if (platform.includes('i386') || platform.includes('i686') || ua.includes('i386') || ua.includes('i686')) return 'x86';
-        // 平台默认兜底
-        const os = getCurrentOS();
-        if (os === 'mac') return 'arm64'; // Apple Silicon 已成主流
-        return 'x86_64';
-    }
 
     // 从文件名解析架构,返回规范化架构 key。
     // 判断顺序很关键:子串存在包含关系(arm64 含 arm、x86_64 含 x86、armv8 含 arm 等),必须先 64 位后 32 位。
@@ -643,8 +587,6 @@
     // --- 核心解耦逻辑 ---
 
     function formatAndSortUI(detailsElem, force) {
-        console.log('%c formatAndSortUI', 'color:red; background:yellow;')
-        // 【核心修复1】移除了强依赖的 li.Box-row，改为筛选包含下载链接的通用 li 标签（含 attestation）
         const validRows = Array.from(detailsElem.querySelectorAll('li')).filter(r => r.querySelector('a[href*="/releases/download/"], a[href*="/archive/"], a[href*="/attestations/"]'));
         if (validRows.length === 0) return;
 
@@ -679,7 +621,6 @@
         parentList.querySelectorAll('.gh-meta-files-wrapper, .gh-group-aux-wrapper').forEach(w => w.remove());
 
         validRows.sort((a, b) => parseInt(b.dataset.matchScore) - parseInt(a.dataset.matchScore));
-        console.log('%c validRows', 'color:red; background:yellow;', validRows)
 
         const normalRows = validRows.filter(r => r._groupInfo.id !== 'meta');
         const metaRows = validRows.filter(r => r._groupInfo.id === 'meta');
@@ -794,6 +735,110 @@
         if (showAllBtn) parentList.appendChild(showAllBtn);
     }
 
+    function testProxySpeed(proxyUrl, timeoutMs = 8000) {
+        return new Promise((resolve) => {
+            if (typeof GM_xmlhttpRequest === 'undefined') {
+                resolve({ url: proxyUrl, time: Infinity, ok: false });
+                return;
+            }
+
+            const startTime = performance.now();
+            const timer = setTimeout(() => {
+                resolve({ url: proxyUrl, time: Infinity, ok: false });
+            }, timeoutMs + 1000);
+
+            const fail = () => {
+                clearTimeout(timer);
+                resolve({ url: proxyUrl, time: Infinity, ok: false });
+            };
+
+            GM_xmlhttpRequest({
+                method: 'HEAD',
+                url: proxyUrl,
+                timeout: timeoutMs,
+                onload: () => {
+                    clearTimeout(timer);
+                    const time = performance.now() - startTime;
+                    resolve({ url: proxyUrl, time, ok: true });
+                },
+                onerror: fail,
+                ontimeout: fail
+            });
+        });
+    }
+
+    function fillGlobalProxySelect() {
+        const select = document.querySelector('.gh-global-proxy-select');
+        if (!select || !_globalSpeedTestCache) return;
+        select.innerHTML = '';
+        _globalSpeedTestCache.results
+            .slice()
+            .sort((a, b) => (a.ok ? a.time : Infinity) - (b.ok ? b.time : Infinity))
+            .forEach(r => {
+                const option = document.createElement('option');
+                option.value = r.prefix;
+                const host = r.prefix.split('/')[2];
+                if (r.ok) {
+                    option.textContent = `${host} (${r.time.toFixed(0)}ms)`;
+                } else {
+                    option.textContent = `${host} (超时)`;
+                    option.disabled = true;
+                }
+                select.appendChild(option);
+            });
+        if (select.options.length > 0) {
+            select.style.display = 'inline-block';
+            select.selectedIndex = 0;
+        }
+    }
+
+    function formatTimeAgo(timestamp) {
+        const diff = Date.now() - timestamp;
+        if (diff < 0) return '刚刚';
+        const seconds = Math.floor(diff / 1000);
+        if (seconds < 60) return `${seconds}秒前`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}分钟前`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}小时前`;
+        const days = Math.floor(hours / 24);
+        return `${days}天前`;
+    }
+
+    function raceN(sources, n = 3, maxWaitMs = 2000) {
+        return new Promise((resolve) => {
+            let returned = 0;
+            const results = [];
+            let resolved = false;
+
+            const timer = setTimeout(() => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(results);
+                }
+            }, maxWaitMs);
+
+            if (sources.length === 0) {
+                clearTimeout(timer);
+                resolve(results);
+                return;
+            }
+
+            sources.forEach(url => {
+                testProxySpeed(url).then(result => {
+                    if (resolved) return;
+                    results.push(result);
+                    returned++;
+                    if (returned >= n) {
+                        clearTimeout(timer);
+                        resolved = true;
+                        resolve(results);
+                    }
+                });
+            });
+        });
+    }
+
     function processProxyButtons(detailsElem) {
         function getOriginalDownloadUrl(row) {
             const directLink = row.querySelector('a[href*="/releases/download/"], a[href*="/archive/"]');
@@ -802,126 +847,6 @@
                 if (href) return new URL(href, window.location.origin).href;
             }
             return null;
-        }
-
-        function getRandomProxyLinks() {
-            const shuffled = RELEASE_PROXY_SOURCES.slice(0);
-            let i = shuffled.length;
-            const minCount = 6;
-            const minIndex = Math.max(0, i - minCount);
-            while (i-- > minIndex) {
-                const index = Math.floor((i + 1) * Math.random());
-                const temp = shuffled[index];
-                shuffled[index] = shuffled[i];
-                shuffled[i] = temp;
-            }
-            return shuffled.slice(minIndex);
-        }
-
-        function ensureXiuBox(row, originalUrl) {
-            if (!originalUrl) return null;
-            let xiuBox = row.querySelector('.XIU2-RS');
-            if (!xiuBox) {
-                xiuBox = document.createElement('div');
-                xiuBox.className = 'XIU2-RS';
-                xiuBox.dataset.generated = 'true';
-
-                const rightSection = row.querySelector('.col-md-6') || row.querySelector('.flex-auto.flex-justify-end');
-                const metaContainer = row.querySelector('.gh-meta-container');
-                const shaWrapper = rightSection ? rightSection.querySelector('.flex-1') : null;
-
-                if (metaContainer) {
-                    metaContainer.appendChild(xiuBox);
-                } else if (rightSection) {
-                    rightSection.appendChild(xiuBox);
-                } else if (shaWrapper) {
-                    shaWrapper.appendChild(xiuBox);
-                } else {
-                    row.appendChild(xiuBox);
-                }
-            }
-
-            const normalized = originalUrl.replace(window.location.origin, '');
-            const proxyLinks = getRandomProxyLinks();
-            if (xiuBox.dataset.lastUrl === normalized && xiuBox.dataset.linkCount === String(proxyLinks.length)) {
-                return xiuBox;
-            }
-            xiuBox.dataset.lastUrl = normalized;
-            xiuBox.dataset.linkCount = String(proxyLinks.length);
-            xiuBox.innerHTML = '';
-
-            proxyLinks.forEach(([prefix, label, title]) => {
-                const proxyHref = prefix + normalized;
-                const link = document.createElement('a');
-                link.className = 'btn';
-                link.href = proxyHref;
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                link.textContent = label;
-                link.title = title;
-                xiuBox.appendChild(link);
-            });
-
-            return xiuBox;
-        }
-
-        function collectXiuLinks(row) {
-            const xiuBox = row.querySelector('.XIU2-RS');
-            if (!xiuBox) return [];
-            return Array.from(xiuBox.querySelectorAll('a.btn[href]'));
-        }
-
-        function mergeProxySources(originalUrl, xiuLinks) {
-            const merged = [];
-            const seen = new Set();
-
-            const pushIfNew = (href, text, title = '') => {
-                if (!href) return;
-                const key = href.trim();
-                if (!key || seen.has(key)) return;
-                seen.add(key);
-                merged.push({ href: key, text: text || '未命名', title });
-            };
-
-            if (originalUrl) {
-                pushIfNew(`https://ghproxy.net/${originalUrl}`, '镜像');
-            }
-
-            xiuLinks.forEach(link => {
-                const href = link.getAttribute('href') || '';
-                const text = link.textContent.trim();
-                const title = link.getAttribute('title') || '';
-                pushIfNew(href, text, title);
-            });
-
-            return merged;
-        }
-
-        function buildDropdown(proxySources) {
-            const dropdown = document.createElement('div');
-            dropdown.className = 'gh-proxy-dropdown';
-
-            const btn = document.createElement('button');
-            btn.className = 'Button Button--secondary Button--small';
-            btn.innerHTML = `<span class="Button-content"><span class="Button-label">代理下载 ▼</span></span>`;
-
-            const menu = document.createElement('div');
-            menu.className = 'gh-proxy-dropdown-menu';
-
-            proxySources.forEach(source => {
-                const link = document.createElement('a');
-                link.className = 'gh-proxy-menu-item';
-                link.href = source.href;
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                link.textContent = source.text;
-                if (source.title) link.title = source.title;
-                menu.appendChild(link);
-            });
-
-            dropdown.appendChild(btn);
-            dropdown.appendChild(menu);
-            return dropdown;
         }
 
         function ensureProxyContainer(row) {
@@ -954,27 +879,111 @@
 
         validRows.forEach(row => {
             const originalUrl = getOriginalDownloadUrl(row);
-            const xiuBox = ensureXiuBox(row, originalUrl);
-            const xiuLinks = collectXiuLinks(row);
+            if (!originalUrl) return;
+
             const container = ensureProxyContainer(row);
-            const existingDropdown = container.querySelector('.gh-proxy-dropdown');
+            const normalized = originalUrl.replace(window.location.origin, '');
+            const proxyUrls = RELEASE_PROXY_SOURCES.map(([prefix]) => prefix + normalized);
+            if (proxyUrls.length === 0) return;
 
-            const prevCount = parseInt(container.dataset.xiuLinkCount || '0');
-            if (existingDropdown && xiuLinks.length === prevCount) return;
-
-            if (existingDropdown) existingDropdown.remove();
-
-            if (xiuBox && !xiuBox.classList.contains('gh-xiu2-hidden')) {
-                xiuBox.classList.add('gh-xiu2-hidden');
+            let autoBtn = container.querySelector('.gh-auto-proxy-btn');
+            if (!autoBtn) {
+                autoBtn = document.createElement('button');
+                autoBtn.className = 'Button Button--secondary Button--small gh-auto-proxy-btn';
+                autoBtn.type = 'button';
+                autoBtn.innerHTML = `<span class="Button-content"><span class="Button-label">⚡ 加速下载</span></span>`;
+                autoBtn.style.marginRight = '6px';
+                autoBtn.style.display = 'inline-flex';
+                autoBtn.style.alignItems = 'center';
+                container.appendChild(autoBtn);
             }
 
-            const proxySources = mergeProxySources(originalUrl, xiuLinks);
-            if (proxySources.length === 0) return;
+            autoBtn.dataset.proxySources = JSON.stringify(proxyUrls);
+            autoBtn.onclick = async function() {
+                const btn = this;
+                if (btn.disabled) return;
+                const sources = JSON.parse(btn.dataset.proxySources || '[]');
+                if (sources.length === 0) return;
 
-            container.dataset.xiuLinkCount = String(xiuLinks.length);
+                const MAX_PROXY_TIME = 3000;
 
-            const dropdown = buildDropdown(proxySources);
-            container.appendChild(dropdown);
+                // 优先使用全局测速缓存
+                if (_globalSpeedTestCache) {
+                    const prefixResults = _globalSpeedTestCache.results;
+                    const matched = sources.map(url => {
+                        const prefixEntry = prefixResults.find(r => url.startsWith(r.prefix));
+                        return { url, time: prefixEntry ? prefixEntry.time : Infinity, ok: prefixEntry ? prefixEntry.ok : false };
+                    }).filter(r => r.ok).sort((a, b) => a.time - b.time);
+
+                    const globalProxySelect = document.querySelector('.gh-global-proxy-select');
+                    let selectedUrl = null;
+                    if (globalProxySelect && globalProxySelect.value) {
+                        const selectedPrefix = globalProxySelect.value;
+                        selectedUrl = matched.find(r => r.url.startsWith(selectedPrefix))?.url;
+                    }
+                    if (!selectedUrl && matched.length > 0) {
+                        selectedUrl = matched[0].url;
+                    }
+                    if (selectedUrl) {
+                        window.open(selectedUrl, '_blank');
+                    } else if (sources.length > 0) {
+                        const fallback = sources[Math.floor(Math.random() * sources.length)];
+                        window.open(fallback, '_blank');
+                    }
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = `<span class="Button-content"><span class="Button-label">⏳ 测速中...</span></span>`;
+
+                const newWindow = window.open('about:blank', '_blank');
+
+                const results = await raceN(sources, 3, 2000);
+
+                _globalSpeedTestCache = {
+                    results: results.map(r => {
+                        const prefix = RELEASE_PROXY_SOURCES.find(([p]) => r.url.startsWith(p))?.[0] || r.url.split('https://github.com')[0];
+                        return { prefix, time: r.time, ok: r.ok };
+                    }),
+                    timestamp: Date.now()
+                };
+
+                fillGlobalProxySelect();
+                saveSpeedCache();
+
+                // 同步更新测速按钮悬浮提示
+                const speedBtnEl = document.querySelector('.gh-speed-test-btn');
+                if (speedBtnEl && _globalSpeedTestCache) {
+                    const fastCount = _globalSpeedTestCache.results.filter(r => r.ok).length;
+                    const age = formatTimeAgo(_globalSpeedTestCache.timestamp);
+                    speedBtnEl.title = `测速完成: ${fastCount}/${_globalSpeedTestCache.results.length} 个可用（${age}）`;
+                }
+
+                const valid = results.filter(r => r.ok && r.time < MAX_PROXY_TIME).sort((a, b) => a.time - b.time);
+
+                let downloadUrl = null;
+                if (valid.length > 0) {
+                    downloadUrl = valid[0].url;
+                } else if (sources.length > 0) {
+                    downloadUrl = sources[Math.floor(Math.random() * sources.length)];
+                }
+
+                if (downloadUrl) {
+                    if (newWindow) {
+                        newWindow.location.href = downloadUrl;
+                    } else {
+                        window.open(downloadUrl, '_blank');
+                    }
+                    btn.innerHTML = `<span class="Button-content"><span class="Button-label">⚡ 加速下载</span></span>`;
+                } else {
+                    if (newWindow) newWindow.close();
+                    btn.innerHTML = `<span class="Button-content"><span class="Button-label">❌ 无可用代理</span></span>`;
+                    setTimeout(() => {
+                        btn.innerHTML = `<span class="Button-content"><span class="Button-label">⚡ 加速下载</span></span>`;
+                    }, 2000);
+                }
+                btn.disabled = false;
+            };
         });
     }
 
@@ -1081,6 +1090,81 @@
                 showArchHelp();
             });
             titleSpan.appendChild(helpBtn);
+
+            // 代理测速按钮
+            const speedBtn = document.createElement('button');
+            speedBtn.type = 'button';
+            speedBtn.className = 'gh-arch-help-btn gh-speed-test-btn';
+            speedBtn.textContent = '⏱';
+            if (_globalSpeedTestCache) {
+                const fastCount = _globalSpeedTestCache.results.filter(r => r.ok).length;
+                const age = formatTimeAgo(_globalSpeedTestCache.timestamp);
+                speedBtn.title = `测速完成: ${fastCount}/${_globalSpeedTestCache.results.length} 个可用（${age}）`;
+            } else {
+                speedBtn.title = '代理测速';
+            }
+            speedBtn.addEventListener('mousedown', (e) => e.stopPropagation());
+            speedBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // 获取当前 release 的第一个文件 URL 用于测速
+                const firstFile = details.querySelector('a[href*="/releases/download/"], a[href*="/archive/"]');
+                if (!firstFile) {
+                    alert('当前没有可测速的文件');
+                    return;
+                }
+
+                const originalUrl = new URL(firstFile.getAttribute('href'), window.location.origin).href;
+                const normalized = originalUrl.replace(window.location.origin, '');
+                const proxyUrls = RELEASE_PROXY_SOURCES.map(([prefix]) => ({ prefix, url: prefix + normalized }));
+
+                speedBtn.disabled = true;
+                speedBtn.textContent = '⏳';
+                speedBtn.title = '测速中...';
+
+                const results = await raceN(proxyUrls.map(p => p.url), 3, 2000);
+                _globalSpeedTestCache = {
+                    results: results.map(r => {
+                        const prefix = RELEASE_PROXY_SOURCES.find(([p]) => r.url.startsWith(p))?.[0] || r.url.split('https://github.com')[0];
+                        return { prefix, time: r.time, ok: r.ok };
+                    }),
+                    timestamp: Date.now()
+                };
+
+                // 填充全局下拉框
+                fillGlobalProxySelect();
+                saveSpeedCache();
+
+                const fastCount = results.filter(r => r.ok).length;
+                const age = formatTimeAgo(_globalSpeedTestCache.timestamp);
+                speedBtn.title = `测速完成: ${fastCount}/${results.length} 个可用（${age}）`;
+                speedBtn.textContent = '⏱';
+                speedBtn.disabled = false;
+            });
+
+            titleSpan.appendChild(speedBtn);
+
+            // 全局代理选择下拉框
+            let globalProxySelect = titleSpan.querySelector('.gh-global-proxy-select');
+            if (!globalProxySelect) {
+                globalProxySelect = document.createElement('select');
+                globalProxySelect.className = 'gh-global-proxy-select';
+                globalProxySelect.style.display = 'none';
+                globalProxySelect.style.marginLeft = '4px';
+                globalProxySelect.style.fontSize = '12px';
+                globalProxySelect.style.padding = '2px 6px';
+                globalProxySelect.style.borderRadius = '4px';
+                globalProxySelect.style.border = '1px solid var(--color-border-default, #30363d)';
+                globalProxySelect.style.backgroundColor = 'var(--color-canvas-default, #0d1117)';
+                globalProxySelect.style.color = 'var(--color-fg-default, #e6edf3)';
+                titleSpan.appendChild(globalProxySelect);
+            }
+
+            // 有缓存时填充下拉框
+            if (_globalSpeedTestCache) {
+                fillGlobalProxySelect();
+            }
         }
 
         const observer = new MutationObserver(() => {
@@ -1118,6 +1202,7 @@
     }
 
     function init() {
+        loadSpeedCache();
         injectCSS();
         injectScrollToTopButton();
 
