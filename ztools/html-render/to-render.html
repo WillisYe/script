@@ -1,327 +1,469 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<!doctype html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>屏幕内容还原</title>
-    <style>
-        body {
-            font-family: "Microsoft YaHei", "SimHei", sans-serif;
-            background-color: #f0f0f0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        /* 模拟手机屏幕容器 */
-        .phone-screen {
-            width: 375px;
-            height: 750px; /* 模拟长屏幕比例 */
-            background-color: #e8f5e9; /* 浅绿色背景 */
-            border: 12px solid #333;
-            border-radius: 30px;
-            overflow: hidden;
-            position: relative;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 顶部区域 */
-        .top-section {
-            height: 15%;
-            background-color: #dcedc8;
-            border-bottom: 2px solid #333;
-            position: relative;
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-start;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        .percent-sign {
-            font-size: 24px;
-            color: #555;
-            font-weight: bold;
-        }
-
-        /* 中间核心图表区域 */
-        .middle-section {
-            flex: 1;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative;
-        }
-
-        .text-green {
-            color: #2e7d32;
-            font-size: 14px;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-
-        .text-red-top {
-            color: #c62828;
-            font-size: 16px;
-            margin-bottom: 5px;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        /* 黄色大方框 */
-        .main-yellow-box {
-            background-color: #fdd835;
-            width: 90%;
-            height: 180px;
-            border: 1px solid #fbc02d;
-            display: flex;
-            justify-content: space-between;
-            position: relative;
-            padding: 5px;
-            box-sizing: border-box;
-        }
-
-        /* 左侧竖排文字 */
-        .side-text-left {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            color: #d32f2f;
-            font-size: 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-right: 5px;
-        }
-        
-        .side-text-left span {
-            margin: 5px 0;
-        }
-
-        /* 中间表格内容 */
-        .center-grid {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            gap: 1px;
-            background-color: #fbc02d; /* 网格线颜色 */
-            border: 1px solid #fbc02d;
-        }
-
-        .grid-item {
-            background-color: #fdd835;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 14px;
-            color: #333;
-            text-align: center;
-        }
-
-        /* 右侧竖排文字 */
-        .side-text-right {
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            color: #d32f2f;
-            font-size: 16px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            margin-left: 5px;
-        }
-
-        .side-text-right span {
-            margin: 5px 0;
-        }
-
-        /* 下方文字 */
-        .text-red-bottom {
-            color: #c62828;
-            font-size: 16px;
-            margin-top: 5px;
-            text-align: center;
-            line-height: 1.5;
-        }
-
-        .text-black-bottom {
-            color: #333;
-            font-size: 14px;
-            margin-top: 5px;
-            text-align: center;
-        }
-
-        /* 底部卡牌区域 */
-        .bottom-section {
-            height: 35%;
-            background-color: #c8e6c9;
-            border-top: 2px solid #333;
-            position: relative;
-            padding: 10px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .card-row-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-        }
-
-        .top-label {
-            color: #d32f2f;
-            font-size: 14px;
-            margin-bottom: 5px;
-            align-self: flex-start;
-            margin-left: 20px;
-        }
-
-        .cards-row {
-            display: flex;
-            justify-content: center;
-            gap: 5px;
-            width: 100%;
-            background-color: #fdd835;
-            padding: 5px;
-            box-sizing: border-box;
-            border: 1px solid #fbc02d;
-        }
-
-        .card-slot {
-            width: 40px;
-            height: 50px;
-            background-color: #555; /* 模拟卡牌背面或暗色 */
-            border: 1px solid #333;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            font-size: 10px;
-        }
-        
-        /* 模拟卡牌里的图片 */
-        .card-img-placeholder {
-            width: 100%;
-            height: 100%;
-            background-color: #777;
-            opacity: 0.8;
-        }
-
-        .side-labels {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #d32f2f;
-            font-size: 14px;
-            writing-mode: vertical-rl;
-        }
-        
-        .side-labels-right {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            color: #d32f2f;
-            font-size: 14px;
-            writing-mode: vertical-rl;
-        }
-
-        .bottom-label {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #d32f2f;
-            font-size: 14px;
-        }
-
-        /* 手机底部水印模拟 */
-        .phone-watermark {
-            position: absolute;
-            bottom: 5px;
-            left: 10px;
-            color: #aaa;
-            font-size: 12px;
-            font-family: sans-serif;
-        }
-
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=375, height=1920, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-
-    <div class="phone-screen">
-        <!-- 顶部区域 -->
-        <div class="top-section">
-            <div class="percent-sign">%</div>
-        </div>
-
-        <!-- 中间核心区域 -->
-        <div class="middle-section">
-            <div class="text-green">绿马（疾病、死亡）</div>
-            <div class="text-red-top">
-                鹰<br>擘饼
-            </div>
-
-            <div class="main-yellow-box">
-                <!-- 左侧文字 -->
-                <div class="side-text-left">
-                    <span>祈祷</span>
-                    <span style="margin-left: 10px; color: #333;">牛</span>
-                </div>
-
-                <!-- 中间网格 -->
-                <div class="center-grid">
-                    <div class="grid-item">约柜</div>
-                    <div class="grid-item">金香坛</div>
-                    <div class="grid-item">陈设饼</div>
-                    <div class="grid-item">金灯台</div>
-                    <div class="grid-item">洗濯盆</div>
-                    <div class="grid-item">铜祭坛</div>
-                </div>
-
-                <!-- 右侧文字 -->
-                <div class="side-text-right">
-                    <span>使徒的教训</span>
-                    <span style="margin-left: 10px; color: #333;">狮子</span>
-                </div>
-            </div>
-
-            <div class="text-red-bottom">
-                团契<br>人子
-            </div>
-            <div class="text-black-bottom">
-                黑马（饥荒、缺乏）
-            </div>
-        </div>
-
-        <!-- 底部区域 -->
-        <div class="bottom-section">
-            <div class="side-labels">祈祷</div>
-            <div class="side-labels-right">使徒的教训</div>
-            
-            <div class="card-row-container">
-                <div class="top-label">擘饼</div>
-                <div class="cards-row">
-                    <!-- 模拟5个卡槽 -->
-                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
-                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
-                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
-                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
-                    <div class="card-slot"><div class="card-img-placeholder"></div></div>
-                </div>
-            </div>
-
-            <div class="bottom-label">团契</div>
-        </div>
-
-        <div class="phone-watermark">HONOR 20i</div>
+<div class="pgn-root top-0 left-0 w-[375px] h-[1920px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[linear-gradient(rgba(239,_239,_244,_1),_rgba(239,_239,_244,_1)),_rgba(239,_239,_244,_1)] relative overflow-hidden">
+  <div class="pgn-node-item-humrjv top-[448px] left-0 w-[375px] h-[76px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-63tg87 top-0 left-0 w-[375px] h-[76px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-item-p3b03v top-[20.025488px] left-[10.025488px] w-[35.86954px] h-[35.86954000000003px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[35.87px] h-[35.87px]">
+      <div class="pgn-node-item-aaygql top-0 left-0 w-[35.86954px] h-[35.86954000000003px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[linear-gradient(90deg,_rgba(77,_175,_255,_1)_0%,_rgba(0,_122,_255,_1)_100%)] absolute w-[35.87px] h-[35.87px]"></div>
     </div>
-
+    <div class="pgn-node-sarry168-6zlhcr top-[16px] left-[56px] w-[135px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-sarry168-6zlhcr__text"><span class="pgn-node-sarry168-6zlhcr__text-content"><span class="pgn-node-sarry168-6zlhcr__text-0">sarry168</span><span class="pgn-node-sarry168-6zlhcr__text-1">（已登录）</span></span></div></div>
+    <div class="pgn-node-text-1bbcrph top-[43px] left-[56px] w-[130px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1bbcrph__text"><span class="pgn-node-text-1bbcrph__text-content"><span class="pgn-node-text-1bbcrph__text-0">使用当前12306账号购票</span></span></div></div>
+    <div class="pgn-node-text-3o45qw top-[29px] left-[297px] w-[52px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-3o45qw__text"><span class="pgn-node-text-3o45qw__text-content"><span class="pgn-node-text-3o45qw__text-0">账号切换</span></span></div></div>
+    <div class="pgn-node-icon-14oe77s top-[33px] left-[359px] w-[6px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-fill-1-1dj9xxt top-0 left-0 w-[6px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(85,_103,_127,_1)] absolute"></div>
+    </div>
+  </div>
+  <div class="pgn-node-item-pmdczv top-[530px] left-0 w-[375px] h-[283px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-70abuc top-0 left-0 w-[375px] h-[283px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-item-hknzrs top-0 left-0 w-[375px] h-[38px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-hwr5o3 top-0 left-0 w-[375px] h-[38px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-hlpaqx top-[8px] left-[10px] w-[45px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-hlpaqx__text"><span class="pgn-node-text-hlpaqx__text-content"><span class="pgn-node-text-hlpaqx__text-0">出行人</span></span></div></div>
+      <div class="pgn-node-text-15en6cb top-[10px] left-[331px] w-[34px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-15en6cb__text"><span class="pgn-node-text-15en6cb__text-content"><span class="pgn-node-text-15en6cb__text-0">共3人</span></span></div></div>
+      <div class="pgn-node-item-6gdj7z top-[37px] left-[10px] w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-item-o8swob top-[54px] left-[10px] w-[355px] h-[65px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-1ppougm top-0 left-0 w-[355px] h-[48px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-item-1x9y0pb top-0 left-0 w-[155px] h-[26px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-vector-9tyzj6 top-0 left-0 w-[155px] h-[26px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] bg-[rgba(244,_245,_247,_1)] absolute"></div>
+          <div class="pgn-node-item-17c9xcu top-px left-px w-[60px] h-[24px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-c6tlm top-0 left-0 w-[60px] h-[24px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] bg-[rgba(0,_122,_255,_1)] absolute"></div>
+          </div>
+          <div class="pgn-node-text-1bh66uz top-[5px] left-[7px] w-[48px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1bh66uz__text"><span class="pgn-node-text-1bh66uz__text-content"><span class="pgn-node-text-1bh66uz__text-0">欧阳艳艳</span></span></div></div>
+          <div class="pgn-node-josephine-chen-mltyxi top-[5px] left-[73px] w-[76px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-josephine-chen-mltyxi__text"><span class="pgn-node-josephine-chen-mltyxi__text-content"><span class="pgn-node-josephine-chen-mltyxi__text-0">Nathan Webb</span></span></div></div>
+          <div class="pgn-node-vector-bah8a7 top-[13.5px] left-[61px] w-[12px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal border-[1px] border-solid border-[rgba(122,147,180,1)] absolute"></div>
+        </div>
+        <div class="pgn-node-icon-4ahhk0 top-[6px] left-[161px] w-[12px] h-[12.000005999999985px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute h-[12px]"><img class="pgn-node-icon-4ahhk0__slice" src="assets/a22d0fb233d11ce18cdefd9545ca45455bb8dcf5cab865c5.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-text-15rjn44 top-[4px] left-[319px] w-[36px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-15rjn44__text"><span class="pgn-node-text-15rjn44__text-content"><span class="pgn-node-text-15rjn44__text-0">成人票</span></span></div></div>
+        <div class="pgn-node-441-1469-qi2vbx top-[32px] left-0 w-[120px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-441-1469-qi2vbx__text"><span class="pgn-node-441-1469-qi2vbx__text-content"><span class="pgn-node-441-1469-qi2vbx__text-0">身份证：441******1469</span></span></div></div>
+        <div class="pgn-node-text-owlupe top-[32px] left-[126px] w-[22px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-owlupe__text"><span class="pgn-node-text-owlupe__text-content"><span class="pgn-node-text-owlupe__text-0">更换</span></span></div></div>
+        <div class="pgn-node-text-1bs34jq top-[32px] left-[247px] w-[108px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1bs34jq__text"><span class="pgn-node-text-1bs34jq__text-content"><span class="pgn-node-text-1bs34jq__text-0">手机号：13155618172</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1c8d1j5 top-[64px] left-0 w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-2-3-9rsn07 top-[135px] left-[10px] w-[355px] h-[65px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-lijzmu top-0 left-0 w-[355px] h-[48px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-item-gmz5ky top-0 left-0 w-[157px] h-[26px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-vector-ifqxwp top-0 left-0 w-[157px] h-[26px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] bg-[rgba(244,_245,_247,_1)] absolute"></div>
+          <div class="pgn-node-item-1geqjya top-px left-px w-[155px] h-[24px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-19ewuui top-0 left-0 w-[48px] h-[24px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] absolute"></div>
+            <div class="pgn-node-vector-ig88dw top-0 left-[60px] w-[95px] h-[24px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] bg-[rgba(0,_122,_255,_1)] absolute"></div>
+          </div>
+          <div class="pgn-node-text-cjwkaj top-[5px] left-[7px] w-[36px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-cjwkaj__text"><span class="pgn-node-text-cjwkaj__text-content"><span class="pgn-node-text-cjwkaj__text-0">旦德云</span></span></div></div>
+          <div class="pgn-node-micheal-arnold-19kbw1a top-[5px] left-[67px] w-[83px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-micheal-arnold-19kbw1a__text"><span class="pgn-node-micheal-arnold-19kbw1a__text-content"><span class="pgn-node-micheal-arnold-19kbw1a__text-0">Micheal Arnold</span></span></div></div>
+          <div class="pgn-node-vector-536ez2 top-[13.5px] left-[49px] w-[12px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal border-[1px] border-solid border-[rgba(122,147,180,1)] absolute"></div>
+        </div>
+        <div class="pgn-node-icon-72lbom top-[7px] left-[163px] w-[12px] h-[12.000005999999985px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute h-[12px]"><img class="pgn-node-icon-72lbom__slice" src="assets/a22d0fb233d11ce18cdefd9545ca45455bb8dcf5cab865c5.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-text-1li2l4b top-[5px] left-[319px] w-[36px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1li2l4b__text"><span class="pgn-node-text-1li2l4b__text-content"><span class="pgn-node-text-1li2l4b__text-0">成人票</span></span></div></div>
+        <div class="pgn-node-56-469-1vt2zf1 top-[32px] left-0 w-[122px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-56-469-1vt2zf1__text"><span class="pgn-node-56-469-1vt2zf1__text-content"><span class="pgn-node-56-469-1vt2zf1__text-0">因公护照：56******469</span></span></div></div>
+        <div class="pgn-node-text-bis88c top-[32px] left-[126px] w-[22px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-bis88c__text"><span class="pgn-node-text-bis88c__text-content"><span class="pgn-node-text-bis88c__text-0">更换</span></span></div></div>
+        <div class="pgn-node-text-m2ezld top-[32px] left-[247px] w-[108px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-m2ezld__text"><span class="pgn-node-text-m2ezld__text-content"><span class="pgn-node-text-m2ezld__text-0">手机号：13155618172</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-q36w3n top-[64px] left-0 w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-2-4-phtrtt top-[216px] left-[10px] w-[355px] h-[50px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-1d91xbx top-0 left-0 w-[355px] h-[50px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-item-1cd2azh top-0 left-0 w-[61px] h-[26px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-vector-1u6ucfp top-0 left-0 w-[61px] h-[26px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] bg-[rgba(244,_245,_247,_1)] absolute"></div>
+          <div class="pgn-node-josephine-chen-1rmq829 top-[5px] left-[6px] w-[49px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-josephine-chen-1rmq829__text"><span class="pgn-node-josephine-chen-1rmq829__text-content"><span class="pgn-node-josephine-chen-1rmq829__text-0">Bill Tyler</span></span></div></div>
+        </div>
+        <div class="pgn-node-icon-qp8kpf top-[8px] left-[67px] w-[12px] h-[12.000005999999985px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute h-[12px]"><img class="pgn-node-icon-qp8kpf__slice" src="assets/a22d0fb233d11ce18cdefd9545ca45455bb8dcf5cab865c5.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-text-13ba348 top-[6px] left-[319px] w-[36px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-13ba348__text"><span class="pgn-node-text-13ba348__text-content"><span class="pgn-node-text-13ba348__text-0">成人票</span></span></div></div>
+        <div class="pgn-node-text-y3o1kq top-[34px] left-[256px] w-[99px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-y3o1kq__text"><span class="pgn-node-text-y3o1kq__text-content"><span class="pgn-node-text-y3o1kq__text-0">申请必须填写手机号</span></span></div></div>
+        <div class="pgn-node-56-469-7rxdyv top-[34px] left-0 w-[122px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-56-469-7rxdyv__text"><span class="pgn-node-56-469-7rxdyv__text-content"><span class="pgn-node-56-469-7rxdyv__text-0">因公护照：56******469</span></span></div></div>
+        <div class="pgn-node-text-jg3l2w top-[34px] left-[126px] w-[22px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-jg3l2w__text"><span class="pgn-node-text-jg3l2w__text-content"><span class="pgn-node-text-jg3l2w__text-0">更换</span></span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="pgn-node-item-2ap4jt top-[819px] left-0 w-[375px] h-[176px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-1y3wvyo top-0 left-0 w-[375px] h-[176px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-img-khk74b top-0 left-0 w-[375px] h-[38px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><img class="pgn-node-img-khk74b__slice" src="assets/63f080574f32edabf6b5e9642dce64d23b34720af19d3e29.png" alt="" aria-hidden="true"></div>
+    <div class="pgn-node-text-1eujdv3 top-[8px] left-[10px] w-[112px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1eujdv3__text"><span class="pgn-node-text-1eujdv3__text-content"><span class="pgn-node-text-1eujdv3__text-0">选座服务(第一程)</span></span></div></div>
+    <div class="pgn-node-text-80kumz top-[10px] left-[281px] w-[84px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-80kumz__text"><span class="pgn-node-text-80kumz__text-content"><span class="pgn-node-text-80kumz__text-0">可选择5个座位</span></span></div></div>
+    <div class="pgn-node-item-183hj84 top-[48px] left-[10px] w-[355px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-text-1sqdt3w top-[11px] left-0 w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1sqdt3w__text"><span class="pgn-node-text-1sqdt3w__text-content"><span class="pgn-node-text-1sqdt3w__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-2jhbbj top-[11px] left-[342px] w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-2jhbbj__text"><span class="pgn-node-text-2jhbbj__text-content"><span class="pgn-node-text-2jhbbj__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-ptq79k top-[11px] left-[192.428571px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-ptq79k__text"><span class="pgn-node-text-ptq79k__text-content"><span class="pgn-node-text-ptq79k__text-0">过道</span></span></div></div>
+      <div class="pgn-node-item-1s54tzw top-0 left-[24.857143px] w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-icon_-4j9iw5 top-0 left-0 w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"><img class="pgn-node-icon_-4j9iw5__slice" src="assets/44c5974045174cf5fc99b60d6925b588585087fe09cf68e7.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-a-1s8u87a top-[6px] left-[18px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-a-1s8u87a__text"><span class="pgn-node-a-1s8u87a__text-content"><span class="pgn-node-a-1s8u87a__text-0">A</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-em02a9 top-0 left-[80.714286px] w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-item-q4uswt top-0 left-0 w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+          <div class="pgn-node-clip-2-1gc02du top-0 left-0 w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+          <div class="pgn-node-fill-1-59jc8v top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(0,_122,_255,_1)] absolute"></div>
+        </div>
+        <div class="pgn-node-b-1upfv04 top-[6px] left-[18px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-b-1upfv04__text"><span class="pgn-node-b-1upfv04__text-content"><span class="pgn-node-b-1upfv04__text-0">B</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-d54waf top-0 left-[136.571429px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-icon_-yu81yo top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><img class="pgn-node-icon_-yu81yo__slice" src="assets/086f0c4d61ee4d78a855ae1b8b96b8b428cd7503055ae112.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-c-1lqgxs1 top-[6px] left-[18px] w-[10px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-c-1lqgxs1__text"><span class="pgn-node-c-1lqgxs1__text-content"><span class="pgn-node-c-1lqgxs1__text-0">C</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-xqoo1f top-0 left-[230.285714px] w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-f0t1tc top-0 left-0 w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-fill-1-y5560o top-[6px] left-[7px] w-[29.99999999999997px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute w-[30px]"></div>
+        <div class="pgn-node-d-1mmfnmf top-[6px] left-[18px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-d-1mmfnmf__text"><span class="pgn-node-d-1mmfnmf__text-content"><span class="pgn-node-d-1mmfnmf__text-0">D</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1bg0kj5 top-0 left-[286.142857px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-clip-2-9h7sn1 top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-fill-1-1euna6r top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+        <div class="pgn-node-f-mo7p7y top-[6px] left-[18px] w-[8px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-f-mo7p7y__text"><span class="pgn-node-f-mo7p7y__text-content"><span class="pgn-node-f-mo7p7y__text-0">F</span></span></div></div>
+      </div>
+    </div>
+    <div class="pgn-node-item-6rm5o1 top-[98px] left-[10px] w-[355px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-text-lawsb4 top-[11px] left-0 w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-lawsb4__text"><span class="pgn-node-text-lawsb4__text-content"><span class="pgn-node-text-lawsb4__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-1prekxm top-[11px] left-[342px] w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1prekxm__text"><span class="pgn-node-text-1prekxm__text-content"><span class="pgn-node-text-1prekxm__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-guu7zq top-[11px] left-[192.428571px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-guu7zq__text"><span class="pgn-node-text-guu7zq__text-content"><span class="pgn-node-text-guu7zq__text-0">过道</span></span></div></div>
+      <div class="pgn-node-item-whj38b top-0 left-[24.857143px] w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-yti1w8 top-0 left-0 w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-item-jghcvm top-[6px] left-[7px] w-[30.000000000000007px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[30px]">
+          <div class="pgn-node-fill-1-231dw7 top-0 left-0 w-[30.000000000000007px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute w-[30px]"></div>
+          <div class="pgn-node-a-jydbxj top-0 left-[11px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-a-jydbxj__text"><span class="pgn-node-a-jydbxj__text-content"><span class="pgn-node-a-jydbxj__text-0">A</span></span></div></div>
+        </div>
+      </div>
+      <div class="pgn-node-item-i9nlk3 top-0 left-[80.714286px] w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-1050zxu top-0 left-0 w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-item-16sizm9 top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-fill-1-gk1wx3 top-0 left-0 w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+          <div class="pgn-node-b-13fnu14 top-0 left-[11px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-b-13fnu14__text"><span class="pgn-node-b-13fnu14__text-content"><span class="pgn-node-b-13fnu14__text-0">B</span></span></div></div>
+        </div>
+      </div>
+      <div class="pgn-node-item-1hiir5l top-0 left-[136.571429px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-clip-2-jueiio top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-fill-4-4gt4jt top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-fill-1-1xbj0n6 top-0 left-0 w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+        </div>
+        <div class="pgn-node-c-1dplhnq top-[6px] left-[18px] w-[10px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-c-1dplhnq__text"><span class="pgn-node-c-1dplhnq__text-content"><span class="pgn-node-c-1dplhnq__text-0">C</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-ngvj48 top-0 left-[230.285714px] w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-1w97a9o top-0 left-0 w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-item-dqjhzs top-[6px] left-[7px] w-[29.99999999999997px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[30px]">
+          <div class="pgn-node-fill-1-w1rbb6 top-0 left-0 w-[29.99999999999997px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute w-[30px]"></div>
+          <div class="pgn-node-d-1yjm746 top-0 left-[11px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-d-1yjm746__text"><span class="pgn-node-d-1yjm746__text-content"><span class="pgn-node-d-1yjm746__text-0">D</span></span></div></div>
+        </div>
+      </div>
+      <div class="pgn-node-item-49g7wb top-0 left-[286.142857px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-clip-2-an0ulw top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-item-x0anrs top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-fill-1-1se1bm0 top-0 left-0 w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+          <div class="pgn-node-f-gij7e4 top-0 left-[11px] w-[8px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-f-gij7e4__text"><span class="pgn-node-f-gij7e4__text-content"><span class="pgn-node-f-gij7e4__text-0">F</span></span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="pgn-node-text-cgmece top-[148px] left-[10px] w-[342px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-cgmece__text"><span class="pgn-node-text-cgmece__text-content"><span class="pgn-node-text-cgmece__text-0">若指定作息无法满足您的选座需求,系统将自动为您分配席位</span></span></div></div>
+  </div>
+  <div class="pgn-node-item-v8pl4 top-[1001px] left-0 w-[375px] h-[176px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-150a0hf top-0 left-0 w-[375px] h-[176px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-img-11yuz8e top-0 left-0 w-[375px] h-[38px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><img class="pgn-node-img-11yuz8e__slice" src="assets/63f080574f32edabf6b5e9642dce64d23b34720af19d3e29.png" alt="" aria-hidden="true"></div>
+    <div class="pgn-node-text-zndvjn top-[8px] left-[10px] w-[112px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-zndvjn__text"><span class="pgn-node-text-zndvjn__text-content"><span class="pgn-node-text-zndvjn__text-0">选座服务(第二程)</span></span></div></div>
+    <div class="pgn-node-text-1jteeev top-[10px] left-[275px] w-[84px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1jteeev__text"><span class="pgn-node-text-1jteeev__text-content"><span class="pgn-node-text-1jteeev__text-0">可选择5个座位</span></span></div></div>
+    <div class="pgn-node-item-s75n01 top-[48px] left-[10px] w-[355px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-text-123qhrp top-[11px] left-0 w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-123qhrp__text"><span class="pgn-node-text-123qhrp__text-content"><span class="pgn-node-text-123qhrp__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-sl31rg top-[11px] left-[342px] w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-sl31rg__text"><span class="pgn-node-text-sl31rg__text-content"><span class="pgn-node-text-sl31rg__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-5dw4i top-[11px] left-[192.428571px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-5dw4i__text"><span class="pgn-node-text-5dw4i__text-content"><span class="pgn-node-text-5dw4i__text-0">过道</span></span></div></div>
+      <div class="pgn-node-item-1aju9hs top-0 left-[24.857143px] w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-icon_-1ng319i top-0 left-0 w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"><img class="pgn-node-icon_-1ng319i__slice" src="assets/44c5974045174cf5fc99b60d6925b588585087fe09cf68e7.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-a-180211 top-[6px] left-[18px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-a-180211__text"><span class="pgn-node-a-180211__text-content"><span class="pgn-node-a-180211__text-0">A</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-l2qn4c top-0 left-[80.714286px] w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-item-vgqt6w top-0 left-0 w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+          <div class="pgn-node-clip-2-1kj2cjp top-0 left-0 w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+          <div class="pgn-node-fill-1-m98s4e top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(0,_122,_255,_1)] absolute"></div>
+        </div>
+        <div class="pgn-node-b-1c0bo9j top-[6px] left-[18px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-b-1c0bo9j__text"><span class="pgn-node-b-1c0bo9j__text-content"><span class="pgn-node-b-1c0bo9j__text-0">B</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1epio5x top-0 left-[136.571429px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-icon_-1tt0mtl top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><img class="pgn-node-icon_-1tt0mtl__slice" src="assets/086f0c4d61ee4d78a855ae1b8b96b8b428cd7503055ae112.png" alt="" aria-hidden="true"></div>
+        <div class="pgn-node-c-15rpikq top-[6px] left-[18px] w-[10px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-c-15rpikq__text"><span class="pgn-node-c-15rpikq__text-content"><span class="pgn-node-c-15rpikq__text-0">C</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-e7kwxt top-0 left-[230.285714px] w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-1uymvg5 top-0 left-0 w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-fill-1-1vig8ln top-[6px] left-[7px] w-[29.99999999999997px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute w-[30px]"></div>
+        <div class="pgn-node-d-1hbk1de top-[6px] left-[18px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-d-1hbk1de__text"><span class="pgn-node-d-1hbk1de__text-content"><span class="pgn-node-d-1hbk1de__text-0">D</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1vk8tp6 top-0 left-[286.142857px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-clip-2-1bg0c95 top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-fill-1-943ey1 top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+        <div class="pgn-node-f-t2ti32 top-[6px] left-[18px] w-[8px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-f-t2ti32__text"><span class="pgn-node-f-t2ti32__text-content"><span class="pgn-node-f-t2ti32__text-0">F</span></span></div></div>
+      </div>
+    </div>
+    <div class="pgn-node-item-bzjc9p top-[98px] left-[10px] w-[355px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-text-18jhvjd top-[11px] left-0 w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-18jhvjd__text"><span class="pgn-node-text-18jhvjd__text-content"><span class="pgn-node-text-18jhvjd__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-1sxsfco top-[11px] left-[342px] w-[13px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1sxsfco__text"><span class="pgn-node-text-1sxsfco__text-content"><span class="pgn-node-text-1sxsfco__text-0">窗</span></span></div></div>
+      <div class="pgn-node-text-1pdwu0k top-[11px] left-[192.428571px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1pdwu0k__text"><span class="pgn-node-text-1pdwu0k__text-content"><span class="pgn-node-text-1pdwu0k__text-0">过道</span></span></div></div>
+      <div class="pgn-node-item-13cgomk top-0 left-[24.857143px] w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-1pgu3ve top-0 left-0 w-[44.00000000000001px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-item-1rjo9x6 top-[6px] left-[7px] w-[30.000000000000007px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[30px]">
+          <div class="pgn-node-fill-1-jxetwf top-0 left-0 w-[30.000000000000007px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute w-[30px]"></div>
+          <div class="pgn-node-a-2hled0 top-0 left-[11px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-a-2hled0__text"><span class="pgn-node-a-2hled0__text-content"><span class="pgn-node-a-2hled0__text-0">A</span></span></div></div>
+        </div>
+      </div>
+      <div class="pgn-node-item-1xsz9nl top-0 left-[80.714286px] w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-13hqcel top-0 left-0 w-[44.000000000000014px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-item-10yc9m2 top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-fill-1-1x8jy0m top-0 left-0 w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+          <div class="pgn-node-b-vm8w8n top-0 left-[11px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-b-vm8w8n__text"><span class="pgn-node-b-vm8w8n__text-content"><span class="pgn-node-b-vm8w8n__text-0">B</span></span></div></div>
+        </div>
+      </div>
+      <div class="pgn-node-item-11igvvf top-0 left-[136.571429px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-clip-2-1utd931 top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-fill-4-1dzi4h8 top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-fill-1-27p5fm top-0 left-0 w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+        </div>
+        <div class="pgn-node-c-o93s00 top-[6px] left-[18px] w-[10px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-c-o93s00__text"><span class="pgn-node-c-o93s00__text-content"><span class="pgn-node-c-o93s00__text-0">C</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-febowt top-0 left-[230.285714px] w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]">
+        <div class="pgn-node-clip-2-3kmp4c top-0 left-0 w-[43.99999999999997px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[44px]"></div>
+        <div class="pgn-node-item-15rc4rv top-[6px] left-[7px] w-[29.99999999999997px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[30px]">
+          <div class="pgn-node-fill-1-1bclaog top-0 left-0 w-[29.99999999999997px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute w-[30px]"></div>
+          <div class="pgn-node-d-bifpnv top-0 left-[11px] w-[9px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-d-bifpnv__text"><span class="pgn-node-d-bifpnv__text-content"><span class="pgn-node-d-bifpnv__text-0">D</span></span></div></div>
+        </div>
+      </div>
+      <div class="pgn-node-item-p86aeu top-0 left-[286.142857px] w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-clip-2-1jrh9rx top-0 left-0 w-[44px] h-[40px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-item-kxndlr top-[6px] left-[7px] w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-fill-1-zhjgqk top-0 left-0 w-[30px] h-[27px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(231,_231,_231,_1)] absolute"></div>
+          <div class="pgn-node-f-m71qe6 top-0 left-[11px] w-[8px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-f-m71qe6__text"><span class="pgn-node-f-m71qe6__text-content"><span class="pgn-node-f-m71qe6__text-0">F</span></span></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="pgn-node-text-tt0bzn top-[148px] left-[10px] w-[342px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-tt0bzn__text"><span class="pgn-node-text-tt0bzn__text-content"><span class="pgn-node-text-tt0bzn__text-0">若指定作息无法满足您的选座需求,系统将自动为您分配席位</span></span></div></div>
+  </div>
+  <div class="pgn-node-item-1bu4k9n top-[1183px] left-0 w-[375px] h-[133px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-qfdqma top-0 left-0 w-[375px] h-[133px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-item-1191ub4 top-0 left-0 w-[375px] h-[45px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-hidq60 top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-rzf1xx top-[12px] left-[10px] w-[75px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-rzf1xx__text"><span class="pgn-node-text-rzf1xx__text-content"><span class="pgn-node-text-rzf1xx__text-0">未符合差标</span></span></div></div>
+      <div class="pgn-node-item-opuz9d top-[44px] left-[10px] w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-3-4-gpj7oj top-[89px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-1bo8cgu top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-1rwfn5z top-[10px] left-[10px] w-[195px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1rwfn5z__text"><span class="pgn-node-text-1rwfn5z__text-content"><span class="pgn-node-text-1rwfn5z__text-0">身体不舒服，需要搭乘早班车</span></span></div></div>
+    </div>
+    <div class="pgn-node-item-1a6ls6c top-[45px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-17xupm9 top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-7e57un top-[13px] left-[327px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-7e57un__text"><span class="pgn-node-text-7e57un__text-content"><span class="pgn-node-text-7e57un__text-0">其他</span></span></div></div>
+      <div class="pgn-node-text-rddzzq top-[13px] left-[10px] w-[52px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-rddzzq__text"><span class="pgn-node-text-rddzzq__text-content"><span class="pgn-node-text-rddzzq__text-0">统一原因</span></span></div></div>
+      <div class="pgn-node-item-1ryiyg1 top-[17px] left-[359px] w-[6.001890000000003px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[6.002px]">
+        <div class="pgn-node-item-64pvfl top-0 left-0 w-[6.001890000000003px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(122,_147,_180,_1)] absolute w-[6.002px]"></div>
+      </div>
+    </div>
+  </div>
+  <div class="pgn-node-item-126fgrg top-[1322px] left-0 w-[375px] h-[89px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-1uk4xzi top-0 left-0 w-[375px] h-[89px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-item-98iw5g top-0 left-0 w-[375px] h-[45px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-1l8yto9 top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-1ipuahe top-[12px] left-[10px] w-[60px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1ipuahe__text"><span class="pgn-node-text-1ipuahe__text-content"><span class="pgn-node-text-1ipuahe__text-0">成本中心</span></span></div></div>
+      <div class="pgn-node-item-16v827m top-[44px] left-[10px] w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-item-1lksxi6 top-[55px] left-[10px] w-[355.00189px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[355.002px]">
+      <div class="pgn-node-text-18lf484 top-0 left-[265px] w-[78px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-18lf484__text"><span class="pgn-node-text-18lf484__text-content"><span class="pgn-node-text-18lf484__text-0">总经理办公室</span></span></div></div>
+      <div class="pgn-node-text-glxtuw top-0 left-0 w-[52px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-glxtuw__text"><span class="pgn-node-text-glxtuw__text-content"><span class="pgn-node-text-glxtuw__text-0">总额分配</span></span></div></div>
+      <div class="pgn-node-item-1rhti8s top-[4px] left-[349px] w-[6.001890000000003px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute w-[6.002px]">
+        <div class="pgn-node-item-1pm97wx top-0 left-0 w-[6.001890000000003px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(122,_147,_180,_1)] absolute w-[6.002px]"></div>
+      </div>
+    </div>
+  </div>
+  <div class="pgn-node-4-2-kxiegq top-[1417px] left-0 w-[375px] h-[266px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-172klbk top-0 left-0 w-[375px] h-[266px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-item-1cetue top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-1g1bi5m top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-1euh1lh top-[12px] left-[10px] w-[45px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1euh1lh__text"><span class="pgn-node-text-1euh1lh__text-content"><span class="pgn-node-text-1euh1lh__text-0">联系人</span></span></div></div>
+    </div>
+    <div class="pgn-node-item-no1r25 top-[89px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-1qojcmd top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-5d5itu top-[12px] left-[10px] w-[60px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-5d5itu__text"><span class="pgn-node-text-5d5itu__text-content"><span class="pgn-node-text-5d5itu__text-0">订单备注</span></span></div></div>
+    </div>
+    <div class="pgn-node-11-2-17hyi93 top-[178px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-5ba7a4 top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-3qbx7c top-[12px] left-[10px] w-[90px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-3qbx7c__text"><span class="pgn-node-text-3qbx7c__text-content"><span class="pgn-node-text-3qbx7c__text-0">出差申请单号</span></span></div></div>
+    </div>
+    <div class="pgn-node-item-1modebw top-[44px] left-0 w-[375px] h-[45px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-zi40sa top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-1usvzre top-[10px] left-[10px] w-[100px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1usvzre__text"><span class="pgn-node-text-1usvzre__text-content"><span class="pgn-node-text-1usvzre__text-0">谭武亮</span></span></div></div>
+      <div class="pgn-node-text-1i1e4ag top-[10px] left-[151px] w-[93px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1i1e4ag__text"><span class="pgn-node-text-1i1e4ag__text-content"><span class="pgn-node-text-1i1e4ag__text-0">13412567832</span></span></div></div>
+      <div class="pgn-node-item-1m05k61 top-[8px] left-[130px] w-px h-[24px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+      <div class="pgn-node-item-1tvioza top-[44px] left-[10px] w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-item-xj8zay top-[133px] left-0 w-[375px] h-[45px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-13q5rjn top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-b1sd4d top-[10px] left-[10px] w-[90px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-b1sd4d__text"><span class="pgn-node-text-b1sd4d__text-content"><span class="pgn-node-text-b1sd4d__text-0">填写订单备注</span></span></div></div>
+      <div class="pgn-node-item-1fzojb4 top-[44px] left-[10px] w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-3-2-11mcgk4 top-[222px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-rmfd4m top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+      <div class="pgn-node-text-5wxcn9 top-[10px] left-[10px] w-[90px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-5wxcn9__text"><span class="pgn-node-text-5wxcn9__text-content"><span class="pgn-node-text-5wxcn9__text-0">填写申请单号</span></span></div></div>
+    </div>
+  </div>
+  <div class="pgn-node-item-1jigz4l top-[1689px] left-0 w-[375px] h-[151px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-item-1pc0l8e top-0 left-0 w-[375px] h-[151px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-lqha32 top-0 left-0 w-[375px] h-[151px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+      <div class="pgn-node-item-13s5ovd top-0 left-0 w-[375px] h-[37px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-vector-1kciv9t top-0 left-0 w-[375px] h-[36px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-text-1qmc6x9 top-[8px] left-[10px] w-[60px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1qmc6x9__text"><span class="pgn-node-text-1qmc6x9__text-content"><span class="pgn-node-text-1qmc6x9__text-0">支付方式</span></span></div></div>
+        <div class="pgn-node-item-15a9vud top-[36px] left-[10px] w-[355px] h-px [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(238,_238,_238,_1)] absolute"></div>
+      </div>
+      <div class="pgn-node-item-yu03gx top-[37px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-vector-10zzpwd top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-item-1sp6bp7 top-[12px] left-[10px] w-[355px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-text-1gt6c7i top-px left-[22px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1gt6c7i__text"><span class="pgn-node-text-1gt6c7i__text-content"><span class="pgn-node-text-1gt6c7i__text-0">预付</span></span></div></div>
+          <div class="pgn-node-item-98dddm top-0 left-[275px] w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-psqt02 top-0 left-0 w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+            <div class="pgn-node-item-nf61pw top-[2px] left-0 w-[20px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+              <div class="pgn-node-item-1jpzukr top-[5.333333px] left-[8px] w-[12px] h-[10.666666999999961px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(76,_191,_0,_1)] absolute h-[10.667px]"></div>
+              <div class="pgn-node-item-qmrbgw top-0 left-0 w-[14.100000000000023px] h-[12.641975000000002px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(76,_191,_0,_1)] absolute w-[14.1px] h-[12.642px]"></div>
+            </div>
+          </div>
+          <div class="pgn-node-item-7ga0gp top-0 left-[305px] w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-16d7gmo top-0 left-0 w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+            <div class="pgn-node-item-1qksc2d top-[2px] left-0 w-[20px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+              <div class="pgn-node-item-1an9et5 top-0 left-0 w-[20px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(0,_122,_255,_1)] absolute"></div>
+            </div>
+          </div>
+          <div class="pgn-node-item-badk92 top-0 left-[335px] w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-12zt87r top-0 left-0 w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+            <div class="pgn-node-item-1qc6psg top-0 left-0 w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+              <div class="pgn-node-item-10fwr8w top-0 left-0 w-[20px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(0,_159,_232,_1)] absolute"></div>
+            </div>
+          </div>
+          <div class="pgn-node-item-asfv0e top-[4px] left-0 w-[12px] h-[12px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-shape-191kh6m top-0 left-0 w-[12px] h-[12px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal border-[0.545455px] border-solid border-[rgba(204,204,204,1)] box-border bg-[rgba(255,_255,_255,_1)] absolute"></div>
+          </div>
+        </div>
+      </div>
+      <div class="pgn-node-item-1w9hnhv top-[81px] left-0 w-[375px] h-[70px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-vector-1gtihi7 top-0 left-0 w-[375px] h-[70px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+        <div class="pgn-node-item-6k7odv top-[13px] left-[10px] w-[355px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-text-tnmiy6 top-0 left-[22px] w-[39px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-tnmiy6__text"><span class="pgn-node-text-tnmiy6__text-content"><span class="pgn-node-text-tnmiy6__text-0">信用付</span></span></div></div>
+          <div class="pgn-node-hr-r14u75 top-[26px] left-[22px] w-[84px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-hr-r14u75__text"><span class="pgn-node-hr-r14u75__text-content"><span class="pgn-node-hr-r14u75__text-0">HR部门专用卡</span></span></div></div>
+          <div class="pgn-node-text-1ecip92 top-0 left-[329px] w-[26px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1ecip92__text"><span class="pgn-node-text-1ecip92__text-content"><span class="pgn-node-text-1ecip92__text-0">更换</span></span></div></div>
+          <div class="pgn-node-4567890234-78-vawcli top-[26px] left-[215px] w-[140px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-4567890234-78-vawcli__text"><span class="pgn-node-4567890234-78-vawcli__text-content"><span class="pgn-node-4567890234-78-vawcli__text-0">卡号：4567890234-78</span></span></div></div>
+          <div class="pgn-node-group-10-copy-2-hne5ty top-[3px] left-0 w-[12px] h-[12px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-rectangle-12-copy-2-qw3kjs top-0 left-0 w-[12px] h-[12px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[54.545455px] border-[0.545455px] border-solid border-[rgba(0,122,255,1)] box-border bg-[rgba(0,_122,_255,_1)] absolute"></div>
+            <div class="pgn-node-oval-2-copy-2-17j931i top-[3.272727px] left-[3.272727px] w-[5.4545449999999995px] h-[5.454545000000053px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute w-[5.455px] h-[5.455px]"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pgn-node-item-yg0ezx top-0 left-0 w-[375px] h-[318px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-item-55h8bn top-0 left-0 w-[375px] h-[318px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(0,_122,_255,_1)] absolute"></div>
+    <div class="pgn-node-bars-status-bar-status-bar---on--1khz7qu top-[2px] left-0 w-[375px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-right-detail-17cb97m top-[3px] left-[302px] w-[69px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-battery-1lbylrf top-[2px] left-[44px] w-[25px] h-[11px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-vector-1wg3lj2 top-0 left-0 w-[22px] h-[10.5px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left opacity-40 mix-blend-normal border-[1px] border-solid border-[rgba(255,255,255,1)] box-border absolute"></div>
+          <div class="pgn-node-combined-shape-21hdrj top-[3.5px] left-[23px] w-[1.5px] h-[3.873982999999999px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_0.4)] absolute h-[3.874px]"></div>
+          <div class="pgn-node-rectangle-copy-4-sqf11a top-[2px] left-[2px] w-[18px] h-[6.5px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[1px] bg-[rgba(255,_255,_255,_1)] absolute"></div>
+        </div>
+        <div class="pgn-node-text-une7s1 -top-[0.5px] left-[8px] w-[33px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-une7s1__text"><span class="pgn-node-text-une7s1__text-content"><span class="pgn-node-text-une7s1__text-0">100%</span></span></div></div>
+        <div class="pgn-node-bluetooth-1f5t611 top-0 left-0 w-[7.5px] h-[13.500500000000002px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute h-[13.501px]"></div>
+      </div>
+      <div class="pgn-node-time-cmsxrm top-[2.5px] left-[165.5px] w-[46px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-time-cmsxrm__text"><span class="pgn-node-time-cmsxrm__text-content"><span class="pgn-node-time-cmsxrm__text-0">9:41 AM</span></span></div></div>
+      <div class="pgn-node-left-detail-bk5e7e top-[5px] left-[7px] w-[32px] h-[10px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-wifi-vp0ir5 top-[0.5px] left-[18.5px] w-[13px] h-[9px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+        <div class="pgn-node-mobile-signal-1ss8en top-0 left-0 w-[14.5px] h-[9.5px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+      </div>
+    </div>
+    <div class="pgn-node-vector-1b8eyil top-[20px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+    <div class="pgn-node-vector-1jmg9yq top-[20px] left-[4px] w-[44px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"></div>
+    <div class="pgn-node-item-1gh24m6 top-[26.568139px] left-[9.451355px] w-[32px] h-[32px] [transform:matrix(0.9993908270190958,_-0.03489949670250097,_0.03489949670250097,_0.9993908270190958,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-bars-navigation-bar-_-light-left-s36v54 top-0 left-0 w-[32px] h-[32px] [transform:matrix(1,_9.228728892196614e-16,_-9.228728892196614e-16,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-chevron-1wcxu13 top-[7.125px] left-[8.5px] w-[10px] h-[17.083333px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute h-[17.083px]"><img class="pgn-node-chevron-1wcxu13__slice" src="assets/64ef3cd53e6705c65b02f2f1df2c645e508c07fa06fc5368.svg" alt="" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="pgn-node-title-tp8mmg top-[31px] left-[74px] w-[227px] h-[22px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-title-tp8mmg__text"><span class="pgn-node-title-tp8mmg__text-content"><span class="pgn-node-title-tp8mmg__text-0">填写订单</span></span></div></div>
+    <div class="pgn-node-item-1n3b7ib top-[74px] left-[22px] w-[173px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-ilyy7j top-px left-0 w-[20px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-vector-ge4lv7 top-px left-0 w-[20px] h-[14px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] border-[1px] border-solid border-[rgba(255,255,255,1)] absolute"></div>
+        <div class="pgn-node-text-cf41i4 top-0 left-[7.5px] w-[5px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-cf41i4__text"><span class="pgn-node-text-cf41i4__text-content"><span class="pgn-node-text-cf41i4__text-0">1</span></span></div></div>
+      </div>
+      <div class="pgn-node-2020-08-19-12ysj2w top-0 left-[36px] w-[137px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-2020-08-19-12ysj2w__text"><span class="pgn-node-2020-08-19-12ysj2w__text-content"><span class="pgn-node-2020-08-19-12ysj2w__text-0">2020-08-19 周五  二等座</span></span></div></div>
+    </div>
+    <div class="pgn-node-item-fbuvb7 top-[99px] left-[50px] w-[275px] h-[63px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-ldpqug top-0 left-0 w-[50px] h-[53px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-05-12-1yktors top-0 left-0 w-[50px] h-[22px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-05-12-1yktors__text"><span class="pgn-node-05-12-1yktors__text-content"><span class="pgn-node-05-12-1yktors__text-0">05:12</span></span></div></div>
+        <div class="pgn-node-text-es0a7l top-[32px] left-0 w-[30px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-es0a7l__text"><span class="pgn-node-text-es0a7l__text-content"><span class="pgn-node-text-es0a7l__text-0">广州</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-6e0fag top-[2px] left-[62px] w-[151px] h-[61px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-item-uzg8uj top-[21px] left-0 w-[151px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-item-1a8wfp9 top-px left-0 w-[151px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-2s0utg top-[7.4967px] left-[0.008344px] w-[151px] h-[2px] [transform:matrix(0.9999777785423118,_0.006666514950340442,_-0.006666514950340442,_0.9999777785423118,_0,_0)] origin-top-left mix-blend-normal border border-solid [border-image-source:linear-gradient(90deg,_rgba(255,_255,_255,_0)_-3.23%,_rgba(255,_255,_255,_1)_52.07%,_rgba(255,_255,_255,_0)_100%,_rgba(255,_255,_255,_0)_100%)] [border-image-slice:1] [border-image-outset:0.5px] absolute"></div>
+            <div class="pgn-node-vector-he9bi8 top-0 left-[43px] w-[66px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[8px] bg-[rgba(255,_255,_255,_1)] absolute"></div>
+          </div>
+          <div class="pgn-node-text-1s80se8 top-0 left-[64px] w-[24px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1s80se8__text"><span class="pgn-node-text-1s80se8__text-content"><span class="pgn-node-text-1s80se8__text-0">经停</span></span></div></div>
+        </div>
+        <div class="pgn-node-2h16m-ofrsce top-0 left-[54px] w-[44px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-2h16m-ofrsce__text"><span class="pgn-node-2h16m-ofrsce__text-content"><span class="pgn-node-2h16m-ofrsce__text-0">2h16m</span></span></div></div>
+        <div class="pgn-node-k9123-1auijr6 top-[45px] left-[54px] w-[44px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-k9123-1auijr6__text"><span class="pgn-node-k9123-1auijr6__text-content"><span class="pgn-node-k9123-1auijr6__text-0">k9123</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1vygmug top-0 left-[225px] w-[50px] h-[53px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-07-29-1gx4czf top-0 left-0 w-[50px] h-[22px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-07-29-1gx4czf__text"><span class="pgn-node-07-29-1gx4czf__text-content"><span class="pgn-node-07-29-1gx4czf__text-0">07:29</span></span></div></div>
+        <div class="pgn-node-text-1er2nqh top-[32px] left-0 w-[44px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1er2nqh__text"><span class="pgn-node-text-1er2nqh__text-content"><span class="pgn-node-text-1er2nqh__text-0">深圳北</span></span></div></div>
+      </div>
+    </div>
+    <div class="pgn-node-item-1gipd19 top-[214px] left-[22px] w-[173px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-151igmw top-px left-0 w-[20px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-vector-ev5zto top-px left-0 w-[20px] h-[14px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] border-[1px] border-solid border-[rgba(255,255,255,1)] absolute"></div>
+        <div class="pgn-node-text-xkzbzy top-0 left-[6.5px] w-[7px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-xkzbzy__text"><span class="pgn-node-text-xkzbzy__text-content"><span class="pgn-node-text-xkzbzy__text-0">2</span></span></div></div>
+      </div>
+      <div class="pgn-node-2020-08-19-1h1eryq top-0 left-[36px] w-[137px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-2020-08-19-1h1eryq__text"><span class="pgn-node-2020-08-19-1h1eryq__text-content"><span class="pgn-node-2020-08-19-1h1eryq__text-0">2020-08-19 周五  二等座</span></span></div></div>
+    </div>
+    <div class="pgn-node-item-c3gz4m top-[239px] left-[50px] w-[275px] h-[63px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-yhkufr top-0 left-0 w-[50px] h-[53px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-05-12-1t3s83z top-0 left-0 w-[50px] h-[22px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-05-12-1t3s83z__text"><span class="pgn-node-05-12-1t3s83z__text-content"><span class="pgn-node-05-12-1t3s83z__text-0">05:12</span></span></div></div>
+        <div class="pgn-node-text-28df89 top-[32px] left-0 w-[44px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-28df89__text"><span class="pgn-node-text-28df89__text-content"><span class="pgn-node-text-28df89__text-0">深圳北</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1p1v8lw top-[2px] left-[62px] w-[151px] h-[61px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-item-1pzv4gp top-[22px] left-0 w-[151px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+          <div class="pgn-node-item-1rq2rt5 top-px left-0 w-[151px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+            <div class="pgn-node-vector-ue0woi top-[7.4967px] left-[0.008344px] w-[151px] h-[2px] [transform:matrix(0.9999777785423118,_0.006666514950340442,_-0.006666514950340442,_0.9999777785423118,_0,_0)] origin-top-left mix-blend-normal border border-solid [border-image-source:linear-gradient(90deg,_rgba(255,_255,_255,_0)_-3.23%,_rgba(255,_255,_255,_1)_52.07%,_rgba(255,_255,_255,_0)_100%,_rgba(255,_255,_255,_0)_100%)] [border-image-slice:1] [border-image-outset:0.5px] absolute"></div>
+            <div class="pgn-node-vector-h04gff top-0 left-[43px] w-[66px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[8px] bg-[rgba(255,_255,_255,_1)] absolute"></div>
+          </div>
+          <div class="pgn-node-text-1d6xw8a top-0 left-[64px] w-[24px] h-[17px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1d6xw8a__text"><span class="pgn-node-text-1d6xw8a__text-content"><span class="pgn-node-text-1d6xw8a__text-0">经停</span></span></div></div>
+        </div>
+        <div class="pgn-node-2h16m-1hnguvk top-0 left-[54px] w-[44px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-2h16m-1hnguvk__text"><span class="pgn-node-2h16m-1hnguvk__text-content"><span class="pgn-node-2h16m-1hnguvk__text-0">2h16m</span></span></div></div>
+        <div class="pgn-node-k9123-1viv80p top-[45px] left-[54px] w-[44px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-k9123-1viv80p__text"><span class="pgn-node-k9123-1viv80p__text-content"><span class="pgn-node-k9123-1viv80p__text-0">k9123</span></span></div></div>
+      </div>
+      <div class="pgn-node-item-1bdkz5q top-0 left-[225px] w-[50px] h-[53px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+        <div class="pgn-node-07-29-lvmrms top-0 left-0 w-[50px] h-[22px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-07-29-lvmrms__text"><span class="pgn-node-07-29-lvmrms__text-content"><span class="pgn-node-07-29-lvmrms__text-0">07:29</span></span></div></div>
+        <div class="pgn-node-text-1b5iqr6 top-[32px] left-0 w-[30px] h-[21px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1b5iqr6__text"><span class="pgn-node-text-1b5iqr6__text-content"><span class="pgn-node-text-1b5iqr6__text-0">广州</span></span></div></div>
+      </div>
+    </div>
+    <div class="pgn-node-item-1gbxro6 top-[178px] left-[50px] w-[275px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-vector-10gjex7 top-[8.788788px] left-[0.00093px] w-[275px] h-px [transform:matrix(0.9999988201998846,_0.0015360985771685383,_-0.0015360985771685383,_0.9999988201998846,_0,_0)] origin-top-left mix-blend-normal border-[1px] border-dashed border-[rgba(255,255,255,1)] absolute"></div>
+      <div class="pgn-node-vector-1ajsave top-0 left-[60px] w-[155px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[10px] bg-[rgba(255,_255,_255,_1)] absolute"></div>
+      <div class="pgn-node-2-6-163ed7n top-[2px] left-[72px] w-[131px] h-[16px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-2-6-163ed7n__text"><span class="pgn-node-2-6-163ed7n__text-content"><span class="pgn-node-2-6-163ed7n__text-0">异站换乘，换而时长2时6分</span></span></div></div>
+    </div>
+  </div>
+  <div class="pgn-node-8-2-1lznswm top-[318px] left-0 w-[375px] h-[74px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-1crplli top-0 left-0 w-[375px] h-[74px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-text-16sf15t top-[10px] left-[16px] w-[343px] h-[54px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-16sf15t__text"><span class="pgn-node-text-16sf15t__text-content"><span class="pgn-node-text-16sf15t__text-0">提示：本方案需要在</span><span class="pgn-node-text-16sf15t__text-1">虎门、衡阳东</span><span class="pgn-node-text-16sf15t__text-2">站换乘，两车间隔时间为<br></span><span class="pgn-node-text-16sf15t__text-3">34分钟</span><span class="pgn-node-text-16sf15t__text-4">。请您充分考虑自身其他各种换乘因素的影响，谨情<br>选择。由此带来的延误风险由您本人承担。</span></span></div></div>
+  </div>
+  <div class="pgn-node-group-10-kk8pxv top-[1856px] left-0 w-[375px] h-[64px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-ed6os3 top-0 left-0 w-[375px] h-[64px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] [box-shadow:0px_-2px_4px_rgba(211,_217,_225,_1)] absolute"></div>
+    <div class="pgn-node-rectangle-3-copy-20-1xrg7ue top-[10px] left-[265px] w-[100px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] bg-[rgba(0,_122,_255,_1)] absolute"></div>
+    <div class="pgn-node-rectangle-3-copy-12-1ujb34e top-[10px] left-[160px] w-[100px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal rounded-[4px] border-[1px] border-solid border-[rgba(0,122,255,1)] box-border bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-copy-1j4hglj top-[20px] left-[283.5px] w-[64px] h-[22px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-copy-1j4hglj__text"><span class="pgn-node-copy-1j4hglj__text-content"><span class="pgn-node-copy-1j4hglj__text-0">提交审批</span></span></div></div>
+    <div class="pgn-node-text-17rbjpj top-[14px] left-[178px] w-[64px] h-[36px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-17rbjpj__text"><span class="pgn-node-text-17rbjpj__text-content"><span class="pgn-node-text-17rbjpj__text-0">保存<br>到待提交</span></span></div></div>
+    <div class="pgn-node-text-156ftwl top-[23px] left-[10px] w-[66px] h-[32px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-156ftwl__text"><span class="pgn-node-text-156ftwl__text-content"><span class="pgn-node-text-156ftwl__text-0">¥</span><span class="pgn-node-text-156ftwl__text-1">6450</span></span></div></div>
+    <div class="pgn-node-chevron-bctcm5 top-[14px] left-[78px] w-[14px] h-[8px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(209,_209,_214,_1)] absolute"></div>
+    <div class="pgn-node-title-copy-16-jmcs07 top-[9px] left-[10px] w-[52px] h-[18px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-title-copy-16-jmcs07__text"><span class="pgn-node-title-copy-16-jmcs07__text-content"><span class="pgn-node-title-copy-16-jmcs07__text-0">订单总额</span></span></div></div>
+  </div>
+  <div class="pgn-node-item-scggr4 top-[398px] left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+    <div class="pgn-node-vector-17pet9q top-0 left-0 w-[375px] h-[44px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(255,_255,_255,_1)] absolute"></div>
+    <div class="pgn-node-text-1m76rqr top-[12px] left-[10px] w-[60px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-1m76rqr__text"><span class="pgn-node-text-1m76rqr__text-content"><span class="pgn-node-text-1m76rqr__text-0">添加旅客</span></span></div></div>
+    <div class="pgn-node-item-kn49e1 top-[15px] left-[181px] w-[14px] h-[14px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-item-1lsg43z top-0 -left-[0.000023px] w-[12.999898000000002px] h-[14px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(162,_175,_193,_1)] absolute w-[13px]"></div>
+    </div>
+    <div class="pgn-node-icon-9pz0eu top-[17px] left-[359px] w-[6px] h-[10px] [transform:matrix(1,_2.4492935982947064e-16,_-2.4492935982947064e-16,_1,_0,_0)] origin-top-left mix-blend-normal absolute">
+      <div class="pgn-node-fill-1-ucvgb8 top-0 left-0 w-[6px] h-[10px] [transform:matrix(1,_-2.4492935982947064e-16,_2.4492935982947064e-16,_1,_0,_0)] origin-top-left mix-blend-normal bg-[rgba(22,_34,_50,_1)] absolute"></div>
+    </div>
+    <div class="pgn-node-text-b92wz9 top-[12px] left-[199px] w-[150px] h-[20px] [transform:matrix(1,_0,_0,_1,_0,_0)] origin-top-left mix-blend-normal absolute"><div class="pgn-node-text-b92wz9__text"><span class="pgn-node-text-b92wz9__text-content"><span class="pgn-node-text-b92wz9__text-0">填写本次入住旅客信息</span></span></div></div>
+  </div>
+</div>
 </body>
 </html>

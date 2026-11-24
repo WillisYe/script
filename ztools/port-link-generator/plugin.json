@@ -1,0 +1,22 @@
+{
+  "name": "port-link-generator",
+  "version": "1.0.0",
+  "description": "根据已有链接生成不同端口组合的新链接，支持8041、28041、38041、48041、58041端口组合",
+  "main": "index.html",
+  "logo": "logo.png",
+  "features": [
+    {
+      "code": "portlink",
+      "explain": "端口链接生成器",
+      "cmds": [
+        {
+          "type": "regex",
+          "match": "/^https?:\\/\\/.+:[0-9]{4,5}\\/.+/i",
+          "label": "生成多端口链接"
+        }
+      ]
+    }
+  ],
+  "platform": ["win32", "darwin", "linux"],
+  "title": "端口链接生成器"
+}

@@ -1,5 +1,5 @@
 # Generate logos for all ztools plugins using GraphicsMagick
-$base = "e:\test\demo-github\chrome_script\ztools"
+$base = "d:\test\demo-github\chrome_script\ztools"
 
 # ===== 1. app-launcher: 蓝色背景 + 火箭造型 =====
 gm.exe convert -size 256x256 `
@@ -94,5 +94,23 @@ gm.exe convert -size 256x256 `
   -draw "circle 68,52 68,73" `
   -draw "circle 84,52 84,89" `
   "$base\html-render\logo.png"
+
+# ===== 7. port-link-generator: 靛蓝背景 + 链接链条 + 端口数字 =====
+gm.exe convert -size 256x256 `
+  xc:"#3F51B5" `
+  -fill "#303F9F" -draw "roundrectangle 0,0 255,255 30,30" `
+  -fill white `
+  -draw "roundrectangle 58,88 108,168 8,8" `
+  -draw "roundrectangle 148,88 198,168 8,8" `
+  -fill none -stroke white -strokewidth 12 `
+  -draw "line 108,128 148,128" `
+  -fill "#3F51B5" `
+  -draw "circle 128,128 128,138" `
+  -fill white -font "Consolas" -pointsize 28 `
+  -draw "text 80,75 '8041'" `
+  -draw "text 162,75 '68041'" `
+  -fill "#FFC107" `
+  -draw "polygon 128,168 118,188 138,188" `
+  "$base\port-link-generator\logo.png"
 
 Write-Host "All logos generated!"

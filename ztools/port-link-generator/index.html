@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>端口链接生成器</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      padding: 16px;
+      padding-bottom: 40px;
+      min-height: 100vh;
+    }
+    .header { margin-bottom: 16px; }
+    .header h1 { font-size: 18px; color: #333; margin-bottom: 4px; }
+    .header p { font-size: 13px; color: #999; }
+    .header p code {
+      background: #f0f0f0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12px;
+    }
+
+    .input-section { position: relative; margin-bottom: 12px; }
+    .input-section textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+    .input-section textarea:focus { border-color: #52c41a; }
+    .char-count {
+      position: absolute;
+      right: 10px;
+      bottom: 8px;
+      font-size: 12px;
+      color: #bbb;
+      pointer-events: none;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 6px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-green { background: #52c41a; color: #fff; }
+    .btn-green:hover { background: #73d13d; }
+    .btn-red { background: #ff4d4f; color: #fff; }
+    .btn-red:hover { background: #ff7875; }
+    .btn-blue { background: #1890ff; color: #fff; }
+    .btn-blue:hover { background: #40a9ff; }
+
+    .results { display: none; }
+    .results.visible { display: block; }
+
+    .link-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .link-item {
+      background: #fff;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 10px 12px;
+      position: relative;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 40px;
+      overflow: hidden;
+    }
+    .link-item:hover {
+      border-color: #52c41a;
+      box-shadow: 0 2px 8px rgba(82, 196, 26, 0.1);
+    }
+    .link-item.opened {
+      background: #f6ffed;
+      border-color: #b7eb8f;
+    }
+    .link-item.opened .port-label {
+      background: #95de64;
+    }
+    .link-item .port-label {
+      display: inline-block;
+      background: #52c41a;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .link-item .url-text {
+      font-size: 13px;
+      color: #333;
+      font-family: 'Consolas', 'Monaco', monospace;
+      line-height: 1.4;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .link-item .copy-btn {
+      padding: 4px 12px;
+      background: #f0f0f0;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .link-item .copy-btn:hover {
+      background: #52c41a;
+      color: #fff;
+      border-color: #52c41a;
+    }
+    .link-item .status-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .link-item.opened .status-badge {
+      opacity: 1;
+    }
+    .link-item .open-btn {
+      padding: 4px 12px;
+      background: #e6f7ff;
+      border: 1px solid #91d5ff;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .link-item .open-btn:hover {
+      background: #1890ff;
+      color: #fff;
+      border-color: #1890ff;
+    }
+
+    .summary {
+      background: #f0f0f0;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+    .summary strong {
+      color: #333;
+    }
+
+    .port-group {
+      margin-bottom: 16px;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .port-group-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #fafafa;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .port-group-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    .port-group-title .count {
+      display: inline-block;
+      background: #52c41a;
+      color: #fff;
+      font-size: 11px;
+      padding: 1px 7px;
+      border-radius: 10px;
+      margin-left: 6px;
+      font-weight: normal;
+    }
+    .port-group-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .port-group-actions .btn {
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    .port-group-body {
+      padding: 6px;
+    }
+    .port-group-body .link-item {
+      border: none;
+      background: transparent;
+      padding: 6px 8px;
+      height: auto;
+      margin-bottom: 2px;
+    }
+    .port-group-body .link-item:hover {
+      background: #f6ffed;
+    }
+    .port-group-body .link-item.opened {
+      background: #f6ffed;
+      border: none;
+    }
+
+    .toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-40px);
+      background: #333;
+      color: #fff;
+      padding: 8px 20px;
+      border-radius: 4px;
+      font-size: 13px;
+      opacity: 0;
+      transition: all 0.3s;
+      z-index: 999;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .error-msg {
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      color: #ff4d4f;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      display: none;
+    }
+    .error-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>端口链接生成器</h1>
+    <p>根据已有链接生成不同端口组合的新链接，支持 <code>8041</code>、<code>28041</code>、<code>38041</code>、<code>48041</code>、<code>58041</code> 端口组合。</p>
+  </div>
+
+  <div class="input-section">
+    <textarea id="urlInput" spellcheck="false" placeholder="粘贴包含端口的URL，例如：http://net2.test.com:8041/RouteWeb.aspx?sid=...&url=http%3A%2F%2Fnet2.test.com%3A28041%2FMemberCenter%2FUnProcessedOrderSpace.aspx"></textarea>
+    <span class="char-count" id="charCount">0</span>
+  </div>
+
+  <div class="controls">
+    <button class="btn btn-green" onclick="loadExample()">★ 示例</button>
+    <button class="btn btn-green" onclick="generateLinks()">生成链接</button>
+    <button class="btn btn-blue" onclick="copyAllLinks()">复制全部</button>
+    <button class="btn btn-blue" onclick="openAllLinks()">打开全部</button>
+    <button class="btn btn-red" onclick="clearAll()">清空</button>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="results" id="results">
+    <div class="summary" id="summary"></div>
+    <div class="link-list" id="linkList"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const urlInput = document.getElementById('urlInput');
+    const charCount = document.getElementById('charCount');
+    const results = document.getElementById('results');
+    const linkList = document.getElementById('linkList');
+    const summary = document.getElementById('summary');
+    const errorMsg = document.getElementById('errorMsg');
+
+    const PORTS = [8041, 28041, 38041, 48041, 58041];
+    let generatedLinks = [];
+
+    urlInput.addEventListener('input', () => {
+      charCount.textContent = urlInput.value.length;
+    });
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1500);
+    }
+
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.add('visible');
+      setTimeout(() => errorMsg.classList.remove('visible'), 3000);
+    }
+
+    function extractUrlParts(url) {
+      try {
+        // 解析主URL
+        const mainUrl = new URL(url);
+
+        // 提取url参数中的内嵌URL
+        const embeddedUrlParam = mainUrl.searchParams.get('url');
+        let embeddedUrl = null;
+
+        if (embeddedUrlParam) {
+          try {
+            embeddedUrl = new URL(decodeURIComponent(embeddedUrlParam));
+          } catch (e) {
+            // 如果解码失败，尝试直接使用
+            embeddedUrl = new URL(embeddedUrlParam);
+          }
+        }
+
+        return {
+          mainUrl,
+          embeddedUrl,
+          hasEmbedded: !!embeddedUrl
+        };
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function generateLinks() {
+      const raw = urlInput.value.trim();
+      if (!raw) {
+        showError('请输入URL');
+        return;
+      }
+
+      const parts = extractUrlParts(raw);
+      if (!parts) {
+        showError('无法解析URL格式，请检查输入');
+        return;
+      }
+
+      const { mainUrl, embeddedUrl, hasEmbedded } = parts;
+      generatedLinks = [];
+
+      // 生成所有端口组合
+      for (const mainPort of PORTS) {
+        if (hasEmbedded) {
+          // 有内嵌URL的情况：生成主端口 × 内嵌端口的所有组合
+          for (const embedPort of PORTS) {
+            // 每次从原始 embeddedUrl 的字符串形式创建新对象
+            const newEmbeddedUrl = new URL(embeddedUrl.toString());
+            newEmbeddedUrl.port = String(embedPort);
+
+            // 从原始URL重建，替换主端口和url参数
+            let resultUrl = `${mainUrl.protocol}//${mainUrl.hostname}:${mainPort}${mainUrl.pathname}`;
+
+            // 重新构建查询参数
+            const params = new URLSearchParams();
+            for (const [key, value] of mainUrl.searchParams) {
+              if (key === 'url') {
+                // URLSearchParams.set 会自动编码，所以传入未编码的URL字符串
+                params.set('url', newEmbeddedUrl.toString());
+              } else {
+                params.set(key, value);
+              }
+            }
+
+            if (params.toString()) {
+              resultUrl += '?' + params.toString();
+            }
+
+            generatedLinks.push({
+              mainPort,
+              embedPort,
+              url: resultUrl,
+              label: `主:${mainPort} | 内嵌:${embedPort}`
+            });
+          }
+        } else {
+          // 没有内嵌URL的情况：只替换主端口
+          const newMainUrl = new URL(mainUrl);
+          newMainUrl.port = mainPort;
+
+          generatedLinks.push({
+            mainPort,
+            embedPort: null,
+            url: newMainUrl.toString(),
+            label: `端口:${mainPort}`
+          });
+        }
+      }
+
+      renderLinks();
+
+      // 调试：打印第一个和最后一个链接
+      if (generatedLinks.length > 0) {
+        console.log('第一个链接:', generatedLinks[0].label, generatedLinks[0].url);
+        console.log('最后一个链接:', generatedLinks[generatedLinks.length - 1].label, generatedLinks[generatedLinks.length - 1].url);
+      }
+    }
+
+    function renderLinks() {
+      if (generatedLinks.length === 0) {
+        results.classList.remove('visible');
+        return;
+      }
+
+      const totalLinks = generatedLinks.length;
+      const hasEmbedded = generatedLinks[0].embedPort !== null;
+
+      summary.innerHTML = hasEmbedded
+        ? `已生成 <strong>${totalLinks}</strong> 个链接（${PORTS.length} 个主端口 × ${PORTS.length} 个内嵌端口）`
+        : `已生成 <strong>${totalLinks}</strong> 个链接`;
+
+      // 按主端口分组
+      const groups = {};
+      generatedLinks.forEach((link, index) => {
+        const key = link.mainPort;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push({ ...link, globalIndex: index });
+      });
+
+      // 渲染每个分组
+      linkList.innerHTML = PORTS.filter(p => groups[p]).map(mainPort => {
+        const groupLinks = groups[mainPort];
+        const linkHtml = groupLinks.map(item => `
+          <div class="link-item" id="link-${item.globalIndex}">
+            ${hasEmbedded ? `<span class="port-label">内嵌:${item.embedPort}</span>` : ''}
+            <span class="status-badge">已打开</span>
+            <div class="url-text" title="${escapeHtml(item.url)}">${escapeHtml(item.url)}</div>
+            <button class="open-btn" onclick="openLink(${item.globalIndex})">打开</button>
+            <button class="copy-btn" onclick="copyLink(${item.globalIndex})">复制</button>
+          </div>
+        `).join('');
+
+        return `
+          <div class="port-group" data-main-port="${mainPort}">
+            <div class="port-group-header">
+              <div class="port-group-title">主端口 ${mainPort} <span class="count">${groupLinks.length}</span></div>
+              <div class="port-group-actions">
+                <button class="btn btn-blue" onclick="openGroup(${mainPort})">打开本组</button>
+                <button class="btn btn-green" onclick="copyGroup(${mainPort})">复制本组</button>
+              </div>
+            </div>
+            <div class="port-group-body">
+              ${linkHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      results.classList.add('visible');
+    }
+
+    function openGroup(mainPort) {
+      const groupLinks = generatedLinks.filter(l => l.mainPort === mainPort);
+      if (groupLinks.length === 0) return;
+      groupLinks.forEach(link => {
+        openLink(generatedLinks.indexOf(link));
+      });
+      showToast(`已打开主端口 ${mainPort} 组的 ${groupLinks.length} 个链接`);
+    }
+
+    function copyGroup(mainPort) {
+      const groupLinks = generatedLinks.filter(l => l.mainPort === mainPort);
+      if (groupLinks.length === 0) return;
+      const text = groupLinks.map(l => l.url).join('\n');
+      navigator.clipboard.writeText(text)
+        .then(() => showToast(`已复制主端口 ${mainPort} 组的 ${groupLinks.length} 个链接`));
+    }
+
+    function copyLink(index) {
+      if (index >= 0 && index < generatedLinks.length) {
+        navigator.clipboard.writeText(generatedLinks[index].url)
+          .then(() => showToast('已复制链接'));
+      }
+    }
+
+    function openLink(index) {
+      if (index >= 0 && index < generatedLinks.length) {
+        const url = generatedLinks[index].url;
+        // 使用 ztools API 在默认浏览器中打开
+        if (window.ztools && window.ztools.openUrl) {
+          window.ztools.openUrl(url);
+        } else {
+          // 降级方案：尝试使用系统命令
+          window.open(url, '_blank');
+        }
+        // 标记为已打开
+        markAsOpened(index);
+      }
+    }
+
+    function openAllLinks() {
+      if (generatedLinks.length === 0) {
+        showToast('无链接可打开');
+        return;
+      }
+
+      generatedLinks.forEach((_, index) => openLink(index));
+      showToast(`已打开 ${generatedLinks.length} 个链接`);
+    }
+
+    function markAsOpened(index) {
+      const linkItem = document.getElementById(`link-${index}`);
+      if (linkItem) {
+        linkItem.classList.add('opened');
+      }
+    }
+
+    function copyAllLinks() {
+      if (generatedLinks.length === 0) {
+        showToast('无链接可复制');
+        return;
+      }
+      const text = generatedLinks.map(link => link.url).join('\n');
+      navigator.clipboard.writeText(text)
+        .then(() => showToast(`已复制 ${generatedLinks.length} 个链接`));
+    }
+
+    function clearAll() {
+      urlInput.value = '';
+      charCount.textContent = '0';
+      results.classList.remove('visible');
+      generatedLinks = [];
+      urlInput.focus();
+    }
+
+    function loadExample() {
+      const example = 'http://net2.test.com:8041/RouteWeb.aspx?sid=4A879C1E2494453BA36B3D3B54852CECAPP&javasid=NET%3A4A879C1E2494453BA36B3D3B54852CECAPP_B031B96B476434B34005D642ACD7F596&url=http%3A%2F%2Fnet2.test.com%3A28041%2FMemberCenter%2FUnProcessedOrderSpace.aspx';
+      urlInput.value = example;
+      charCount.textContent = example.length;
+      generateLinks();
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    // 插件入口
+    window.ztools.onPluginEnter(({ payload }) => {
+      const url = (payload || '').trim();
+      if (!url) return;
+      urlInput.value = url;
+      charCount.textContent = url.length;
+      generateLinks();
+    });
+
+    // 回车触发生成
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        generateLinks();
+      }
+    });
+  </script>
+</body>
+</html>

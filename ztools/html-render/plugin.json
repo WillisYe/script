@@ -11,7 +11,7 @@
       "cmds": [
         {
           "type": "regex",
-          "match": "/<!DOCTYPE html>.*/",
+          "match": "/^\\s*<!doctype html>[\\s\\S]*/i",
           "label": "html-render"
         }
       ],
