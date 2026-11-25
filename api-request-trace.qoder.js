@@ -4,7 +4,10 @@
 // @version      0.3.0
 // @description  点击开关记录前端接口请求链路，监听状态刷新后保持
 // @match        *://*/*
-// @grant        none
+// @grant        GM_registerMenuCommand
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        unsafeWindow
 // @run-at       document-start
 // ==/UserScript==
 
@@ -14,7 +17,36 @@
   const TRACE_PANEL_ID = 'api-trace-panel';
   const REPEAT_WINDOW_MS = 220;
   const LISTENING_STORAGE_KEY = 'api-request-trace-logger:listening';
-  const isTopFrame = window === window.top;
+  const SITE_SWITCH_KEY = 'api-request-trace:site-enabled';
+  const pageWindow = unsafeWindow;
+  const isTopFrame = pageWindow === pageWindow.top;
+
+  function getSiteKey() {
+    try {
+      return pageWindow.top.location.hostname;
+    } catch (e) {
+      return pageWindow.location.hostname;
+    }
+  }
+
+  function isSiteEnabled() {
+    const map = GM_getValue(SITE_SWITCH_KEY, {}) || {};
+    return map[getSiteKey()] === true;
+  }
+
+  function toggleCurrentSite() {
+    const map = GM_getValue(SITE_SWITCH_KEY, {}) || {};
+    map[getSiteKey()] = !isSiteEnabled();
+    GM_setValue(SITE_SWITCH_KEY, map);
+    pageWindow.location.reload();
+  }
+
+  if (isTopFrame) {
+    GM_registerMenuCommand(
+      isSiteEnabled() ? '在当前站点禁用 API Trace' : '在当前站点启用 API Trace',
+      toggleCurrentSite
+    );
+  }
 
   let logCounter = 0;
   let repeatState = null;
@@ -24,7 +56,7 @@
 
   function readListeningState() {
     try {
-      return window.localStorage.getItem(LISTENING_STORAGE_KEY) === 'true';
+      return pageWindow.localStorage.getItem(LISTENING_STORAGE_KEY) === 'true';
     } catch (error) {
       console.warn('API Trace: failed to read listening state', error);
       return false;
@@ -33,7 +65,7 @@
 
   function persistListeningState(listening) {
     try {
-      window.localStorage.setItem(LISTENING_STORAGE_KEY, String(listening));
+      pageWindow.localStorage.setItem(LISTENING_STORAGE_KEY, String(listening));
     } catch (error) {
       console.warn('API Trace: failed to save listening state', error);
     }
@@ -44,7 +76,7 @@
     listening: readListeningState(),
     listeningEpoch: 0,
     opacity: 0.9,
-    apiFilter: '',
+    apiFilter: [],
     timeStart: '',
     timeEnd: '',
     logs: [],
@@ -105,7 +137,7 @@
 
   function getApiName(url, method = 'GET') {
     try {
-      const absoluteUrl = new URL(url, location.href);
+      const absoluteUrl = new URL(url, pageWindow.location.href);
       const sections = absoluteUrl.pathname.split('/').filter(Boolean);
       const name = sections.length ? sections[sections.length - 1] : 'root';
       return `${name || 'root'}:${method.toUpperCase()}`;
@@ -162,26 +194,23 @@
     state.apiOptions = ['全部', ...Array.from(apiSet).sort()];
     state.timeOptions = ['全部', ...Array.from(timeSet).sort()];
 
-    if (state.apiFilter && !apiSet.has(state.apiFilter)) {
-      state.apiFilter = '全部';
-    }
+    state.apiFilter = state.apiFilter.filter((item) => item !== '全部' && apiSet.has(item));
     if (state.timeStart && !timeSet.has(state.timeStart)) {
       state.timeStart = '全部';
     }
     if (state.timeEnd && !timeSet.has(state.timeEnd)) {
       state.timeEnd = '全部';
     }
-    if (!state.apiFilter) state.apiFilter = '全部';
     if (!state.timeStart) state.timeStart = '全部';
     if (!state.timeEnd) state.timeEnd = '全部';
   }
 
   function matchesFilter(entry) {
-    const apiFilter = state.apiFilter;
+    const apiFilters = state.apiFilter;
     const startVal = state.timeStart;
     const endVal = state.timeEnd;
 
-    if (apiFilter && apiFilter !== '全部' && !entry.name.includes(apiFilter)) {
+    if (apiFilters.length && !apiFilters.some((item) => entry.name.includes(item))) {
       return false;
     }
 
@@ -281,7 +310,7 @@
   function updatePanelHorizontalAnchor(panel) {
     const rect = panel.getBoundingClientRect();
     const leftGap = Math.max(8, rect.left);
-    const rightGap = Math.max(8, window.innerWidth - rect.right);
+    const rightGap = Math.max(8, pageWindow.innerWidth - rect.right);
     if (leftGap <= rightGap) {
       panel.__apiTraceHorizontalAnchor = 'left';
       panel.__apiTraceHorizontalOffset = leftGap;
@@ -294,11 +323,11 @@
   function clampPanelToViewport(panel) {
     const rect = panel.getBoundingClientRect();
     const margin = 8;
-    const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
-    const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+    const maxLeft = Math.max(margin, pageWindow.innerWidth - rect.width - margin);
+    const maxTop = Math.max(margin, pageWindow.innerHeight - rect.height - margin);
     const offset = panel.__apiTraceHorizontalOffset ?? margin;
     const desiredLeft = panel.__apiTraceHorizontalAnchor === 'right'
-      ? window.innerWidth - rect.width - offset
+      ? pageWindow.innerWidth - rect.width - offset
       : offset;
     panel.style.left = `${Math.min(Math.max(desiredLeft, margin), maxLeft)}px`;
     panel.style.top = `${Math.min(Math.max(rect.top, margin), maxTop)}px`;
@@ -320,7 +349,7 @@
   }
 
   function ensurePanel() {
-    if (!isTopFrame) return null;
+    if (!isTopFrame || !isSiteEnabled()) return null;
 
     let panel = document.getElementById(TRACE_PANEL_ID);
     if (panel) return panel;
@@ -335,7 +364,9 @@
       'top: 12px',
       'width: 300px',
       'max-width: calc(100vw - 16px)',
-      'max-height: 72vh',
+      'display: flex',
+      'flex-direction: column',
+      'max-height: calc(100vh - 24px)',
       'z-index: 2147483647',
       'background: rgba(15, 23, 42, 0.58)',
       'opacity: 0.9',
@@ -415,7 +446,7 @@
     panel.appendChild(header);
 
     const filterWrap = document.createElement('div');
-    filterWrap.style.cssText = 'padding:8px 10px 6px; display:flex; flex-direction:column; gap:6px; background: rgba(15,23,42,0.2);';
+    filterWrap.style.cssText = 'padding:8px 10px 6px; display:flex; flex-direction:column; gap:6px; flex-shrink:0; max-height:60vh; overflow-y:auto; background: rgba(15,23,42,0.2);';
 
     const apiRow = document.createElement('div');
     apiRow.style.cssText = 'display:flex; align-items:center; gap:6px;';
@@ -423,9 +454,13 @@
     apiLabel.textContent = '接口:';
     apiLabel.style.cssText = 'width:32px; color:#cbd5e1;flex-shrink:0;';
     const apiSelect = document.createElement('select');
-    apiSelect.style.cssText = 'flex:1; border:1px solid rgba(148,163,184,0.25); background:rgba(15,23,42,0.7); color:#e2e8f0; border-radius:6px; padding:4px 6px;width:0;height:28px;';
+    apiSelect.multiple = true;
+    apiSelect.title = '按住 Ctrl/Cmd 可多选接口；不选或选择“全部”表示不过滤';
+    apiSelect.style.cssText = 'flex:1; border:1px solid rgba(148,163,184,0.25); background:rgba(15,23,42,0.7); color:#e2e8f0; border-radius:6px; padding:2px 4px; width:0; height:auto;';
     apiSelect.onchange = (event) => {
-      state.apiFilter = event.target.value;
+      state.apiFilter = Array.from(event.target.selectedOptions)
+        .map((option) => option.value)
+        .filter((value) => value !== '全部');
       render();
     };
 
@@ -487,7 +522,7 @@
 
     const listWrap = document.createElement('div');
     listWrap.className = 'log-list';
-    listWrap.style.cssText = 'padding:8px 10px 10px; max-height:58vh; overflow:auto; white-space:pre-wrap;';
+    listWrap.style.cssText = 'padding:8px 10px 10px; flex:1 1 auto; min-height:0; overflow:auto; white-space:pre-wrap;';
     panel.appendChild(listWrap);
 
     bindDrag(panel, header);
@@ -555,8 +590,21 @@
       [startSelect, state.timeOptions, state.timeStart],
       [endSelect, state.timeOptions, state.timeEnd],
     ]) {
-      select.innerHTML = options.map((item) => `<option value="${item}">${item}</option>`).join('');
-      select.value = options.includes(value) ? value : '全部';
+      select.innerHTML = '';
+      const selectedValues = new Set(
+        select.multiple
+          ? (Array.isArray(value) && value.length ? value : ['全部'])
+          : [value]
+      );
+      for (const item of options) {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        option.selected = selectedValues.has(item);
+        select.appendChild(option);
+      }
+      if (select.multiple) select.size = Math.max(options.length, 1);
+      if (!select.multiple && !options.includes(value)) select.value = '全部';
     }
 
     listWrap.innerHTML = '';
@@ -647,8 +695,8 @@
   }
 
   function patchFetch() {
-    const originalFetch = window.fetch.bind(window);
-    window.fetch = async function patchedFetch(input, init) {
+    const originalFetch = pageWindow.fetch.bind(pageWindow);
+    pageWindow.fetch = async function patchedFetch(input, init) {
       if (!state.listening) return originalFetch(input, init);
 
       const listeningEpoch = state.listeningEpoch;
@@ -684,7 +732,7 @@
   }
 
   function patchXHR() {
-    const XMLHttpRequestProto = window.XMLHttpRequest && window.XMLHttpRequest.prototype;
+    const XMLHttpRequestProto = pageWindow.XMLHttpRequest && pageWindow.XMLHttpRequest.prototype;
     if (!XMLHttpRequestProto) return;
 
     const originalOpen = XMLHttpRequestProto.open;
@@ -724,18 +772,20 @@
   }
 
   function install() {
+    if (!isSiteEnabled()) return;
+
     patchFetch();
     patchXHR();
-    state.apiFilter = '全部';
+    state.apiFilter = [];
     state.timeStart = '全部';
     state.timeEnd = '全部';
     if (isTopFrame) {
       const panel = ensurePanel();
       render();
-      window.addEventListener('resize', () => clampPanelToViewport(panel));
+      pageWindow.addEventListener('resize', () => clampPanelToViewport(panel));
     }
 
-    window.addEventListener('beforeunload', () => {
+    pageWindow.addEventListener('beforeunload', () => {
       flushRepeatState();
     });
   }
