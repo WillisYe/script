@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         JIRA Bug 一键复制详情
+// @name         JIRA Bug 一键复制详情 / 编辑弹窗字段精简
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  在 JIRA Issue Navigator 列表页，一键获取所有 Bug 的完整详情并复制为纯文本，方便粘贴给 AI 编辑器处理
+// @version      1.1.0
+// @description  在 JIRA Issue Navigator 列表页一键复制 Bug 详情；在编辑问题弹窗中仅显示「缺陷状态」
 // @match        http://192.168.90.100:8080/*
 // @grant        GM_xmlhttpRequest
 // @connect      192.168.90.100
@@ -42,6 +42,12 @@
             bugStatus: 'customfield_11120'
         }
     };
+
+    // 编辑弹窗字段精简：保留「缺陷状态」，复用已有字段映射
+    var KEEP_FIELD_ID = CONFIG.fields.bugStatus;
+    var KEEP_LABEL = '缺陷状态';
+    var JIRA_HIDDEN_ATTRIBUTE = 'data-jira-status-filter-hidden';
+    var FILTER_STYLE_ID = 'jira-status-filter-style';
 
     // ============ 工具函数 ============
 
@@ -336,6 +342,63 @@
         }
     }
 
+    // ============ 编辑弹窗字段精简 ============
+
+    function injectFilterStyle() {
+        if (document.getElementById(FILTER_STYLE_ID)) return;
+        var style = document.createElement('style');
+        style.id = FILTER_STYLE_ID;
+        style.textContent = '[' + JIRA_HIDDEN_ATTRIBUTE + '="true"] { display: none !important; }';
+        (document.head || document.documentElement).appendChild(style);
+    }
+
+    function isJiraKeepField(element) {
+        if (element.id === KEEP_FIELD_ID) return true;
+        if (element.querySelector('#' + KEEP_FIELD_ID)) return true;
+
+        var label = element.querySelector('label');
+        if (label && label.textContent.replace(/\s+/g, '').indexOf(KEEP_LABEL) !== -1) return true;
+
+        return false;
+    }
+
+    function filterJiraEditFields() {
+        injectFilterStyle();
+
+        var dialog = document.querySelector('#edit-issue-dialog');
+        if (!dialog) return;
+
+        dialog.querySelectorAll('[' + JIRA_HIDDEN_ATTRIBUTE + '="true"]').forEach(function (element) {
+            element.removeAttribute(JIRA_HIDDEN_ATTRIBUTE);
+        });
+
+        var form = dialog.querySelector('form[name="jiraform"]');
+        if (!form) return;
+
+        form.querySelectorAll('.field-group, fieldset.group').forEach(function (element) {
+            if (isJiraKeepField(element)) return;
+            element.setAttribute(JIRA_HIDDEN_ATTRIBUTE, 'true');
+        });
+    }
+
+    function setupEditDialogFilter() {
+        filterJiraEditFields();
+
+        var timer = null;
+        var observer = new MutationObserver(function () {
+            if (timer) return;
+            timer = setTimeout(function () {
+                timer = null;
+                filterJiraEditFields();
+            }, 100);
+        });
+
+        observer.observe(document.body || document.documentElement, {
+            childList: true,
+            subtree: true,
+        });
+    }
+
     // ============ 启动 ============
 
     // JIRA 列表页可能是动态加载的，轮询等待
@@ -361,6 +424,9 @@
             }
         }, 1000);
     }
+
+    // 编辑弹窗字段精简在 JIRA 各页面都生效
+    setupEditDialogFilter();
 
     // 检查是否是列表页
     if (location.pathname === '/secure/IssueNavigator.jspa' ||

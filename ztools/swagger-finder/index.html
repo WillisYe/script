@@ -100,6 +100,10 @@
     .btn-primary { background: #1890ff; color: #fff; border-color: #1890ff; }
     .btn-primary:hover { background: #40a9ff; }
     .summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
       padding: 14px 16px;
       font-size: 14px;
       color: #666;
@@ -205,7 +209,9 @@
 
     // 渲染候选列表
     function renderResults(apiUrl, candidates, results) {
-      const found = results.filter(r => r && r.ok);
+      const foundUrls = candidates.filter((_, i) => results[i] && results[i].ok);
+      const found = foundUrls.map(url => ({ url, ok: true }));
+      window.currentFoundUrls = foundUrls;
       const allDone = results.length === candidates.length;
       const checking = results.filter(r => r === undefined).length;
       // 排序：可访问 > 未验证 > 不可访问
@@ -217,18 +223,24 @@
       });
 
       // 汇总状态
-      let summaryHtml;
+      let summaryText;
       if (!allDone) {
-        summaryHtml = `<div class="summary">验证中... 已检查 ${results.length - checking}/${candidates.length}</div>`;
+        summaryText = `验证中... 已检查 ${results.length - checking}/${candidates.length}`;
+        if (found.length > 0) summaryText += `（已找到 ${found.length} 个）`;
       } else if (found.length > 0) {
-        summaryHtml = `<div class="summary">找到 <span class="found">${found.length}</span> 个可用文档地址</div>`;
+        summaryText = `找到 <span class="found">${found.length}</span> 个可用文档地址`;
       } else {
-        summaryHtml = `<div class="summary"><span class="not-found">未找到</span>可用的文档地址</div>`;
+        summaryText = `<span class="not-found">未找到</span>可用的文档地址`;
       }
+      const summaryHtml = `
+        <div class="summary">
+          <span>${summaryText}</span>
+          ${found.length > 0 ? '<button class="btn btn-primary" onclick="openAllUrls()">一键打开全部</button>' : ''}
+        </div>`;
 
       // 可用地址卡片
       const foundHtml = found.map(r => {
-        const c = candidates[results.indexOf(r)];
+        const c = r.url;
         return `
           <div class="found-card">
             <div class="status-icon ok">✓</div>
@@ -286,6 +298,10 @@
 
     window.openUrl = function(url) {
       window.ztools.shellOpenExternal(url);
+    };
+
+    window.openAllUrls = function() {
+      (window.currentFoundUrls || []).forEach(url => window.ztools.shellOpenExternal(url));
     };
 
     window.copyUrl = function(url) {

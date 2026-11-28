@@ -125,6 +125,8 @@
     if (body instanceof FormData) return '[FormData]';
     if (body instanceof URLSearchParams) return body.toString();
     if (body instanceof Blob) return `[Blob:${body.type || 'unknown'}]`;
+    if (body instanceof ArrayBuffer) return `[ArrayBuffer:${body.byteLength}]`;
+    if (ArrayBuffer.isView(body)) return `[${body.constructor.name}:${body.byteLength}]`;
     if (typeof body === 'object') {
       try {
         return JSON.stringify(body);
